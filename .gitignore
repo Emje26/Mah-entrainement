@@ -1,0 +1,36 @@
+# Dépendances
+node_modules/
+vendor/
+venv/
+__pycache__/
+
+# Environnement
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Build
+dist/
+build/
+*.o
+*.exe
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Cache
+.cache/
+*.pyc
