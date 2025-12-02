@@ -1,0 +1,41 @@
+# frozen_string_literal: true
+
+en:
+  activerecord:
+    models:
+      user:
+        one: User
+        other: Users
+      item:
+        one: Item
+        other: Items
+    attributes:
+      user:
+        name: Name
+        email: Email
+        password: Password
+        password_confirmation: Password confirmation
+        created_at: Created at
+        updated_at: Updated at
+      item:
+        name: Name
+        description: Description
+        price: Price
+        quantity: Quantity
+        created_at: Created at
+        updated_at: Updated at
+
+  flash:
+    actions:
+      create:
+        success: "%{model} was successfully created."
+      update:
+        success: "%{model} was successfully updated."
+      destroy:
+        success: "%{model} was successfully deleted."
+
+  helpers:
+    submit:
+      create: "Create %{model}"
+      submit: "Save %{model}"
+      update: "Update %{model}"

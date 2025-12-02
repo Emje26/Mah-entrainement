@@ -4,28 +4,47 @@ source 'https://rubygems.org'
 
 ruby '>= 3.0.0'
 
-# Core
-gem 'bundler', '~> 2.0'
-gem 'rake', '~> 13.0'
+# Rails framework
+gem 'rails', '~> 7.1.0'
 
-# Web framework (choose one)
-gem 'sinatra', '~> 3.0'
-# gem 'rack', '~> 3.0'
+# The original asset pipeline for Rails
+gem 'sprockets-rails'
 
-# Database
+# Use SQLite as the database for Active Record
 gem 'sqlite3', '~> 1.6'
-# gem 'pg', '~> 1.5'           # PostgreSQL
-# gem 'mysql2', '~> 0.5'       # MySQL
 
-# ORM
-# gem 'sequel', '~> 5.0'
-# gem 'activerecord', '~> 7.0'
+# Use the Puma web server
+gem 'puma', '~> 6.0'
 
-# Environment
-gem 'dotenv', '~> 2.8'
+# Use JavaScript with ESM import maps
+gem 'importmap-rails'
 
-# JSON
-gem 'json', '~> 2.6'
+# Hotwire's SPA-like page accelerator
+gem 'turbo-rails'
+
+# Hotwire's modest JavaScript framework
+gem 'stimulus-rails'
+
+# Build JSON APIs with ease
+gem 'jbuilder'
+
+# Use Redis adapter to run Action Cable in production
+# gem 'redis', '~> 5.0'
+
+# Use Kredis to get higher-level data types in Redis
+# gem 'kredis'
+
+# Use Active Model has_secure_password
+gem 'bcrypt', '~> 3.1.7'
+
+# Windows does not include zoneinfo files, so bundle the tzinfo-data gem
+gem 'tzinfo-data', platforms: %i[windows jruby]
+
+# Reduces boot times through caching; required in config/boot.rb
+gem 'bootsnap', require: false
+
+# Use Active Storage variants
+# gem 'image_processing', '~> 1.2'
 
 # HTTP Client
 gem 'httparty', '~> 0.21'
@@ -33,25 +52,53 @@ gem 'httparty', '~> 0.21'
 # HTML Parsing
 gem 'nokogiri', '~> 1.15'
 
-# Template Engine
-gem 'erb', '~> 4.0'
-# gem 'slim', '~> 5.0'
-# gem 'haml', '~> 6.0'
+group :development, :test do
+  # Debugging
+  gem 'debug', platforms: %i[mri windows]
+
+  # RSpec for testing
+  gem 'rspec-rails', '~> 6.0'
+  gem 'factory_bot_rails', '~> 6.2'
+  gem 'faker', '~> 3.2'
+
+  # Environment variables
+  gem 'dotenv-rails', '~> 2.8'
+end
 
 group :development do
-  gem 'pry', '~> 0.14'
+  # Use console on exceptions pages
+  gem 'web-console'
+
+  # Speed up commands on slow machines / big apps
+  # gem 'spring'
+
+  # Code quality
   gem 'rubocop', '~> 1.50', require: false
+  gem 'rubocop-rails', '~> 2.19', require: false
   gem 'rubocop-performance', '~> 1.17', require: false
+
+  # Better error pages
+  gem 'better_errors'
+  gem 'binding_of_caller'
+
+  # N+1 query detection
+  gem 'bullet'
+
+  # Annotate models with schema
+  gem 'annotate'
 end
 
 group :test do
-  gem 'rspec', '~> 3.12'
-  gem 'rack-test', '~> 2.1'
-  gem 'factory_bot', '~> 6.2'
-  gem 'faker', '~> 3.2'
-  gem 'simplecov', '~> 0.22', require: false
-end
+  # Use system testing
+  gem 'capybara'
+  gem 'selenium-webdriver'
 
-group :development, :test do
-  gem 'debug', '~> 1.8'
+  # Code coverage
+  gem 'simplecov', require: false
+
+  # Database cleaner
+  gem 'database_cleaner-active_record'
+
+  # Shoulda matchers for RSpec
+  gem 'shoulda-matchers', '~> 5.0'
 end

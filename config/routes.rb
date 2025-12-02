@@ -1,114 +1,59 @@
 # frozen_string_literal: true
 
-# Routes configuration - Maps URLs to controller actions
+Rails.application.routes.draw do
+  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
 
-class Router
-  def initialize
-    @routes = { get: {}, post: {}, patch: {}, put: {}, delete: {} }
-  end
+  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
+  # Can be used by load balancers and uptime monitors to verify that the app is live.
+  get 'up' => 'rails/health#show', as: :rails_health_check
 
-  # DSL methods for defining routes
-  def get(path, to:)
-    @routes[:get][path] = parse_action(to)
-  end
+  # Root route
+  root 'home#index'
 
-  def post(path, to:)
-    @routes[:post][path] = parse_action(to)
-  end
-
-  def patch(path, to:)
-    @routes[:patch][path] = parse_action(to)
-  end
-
-  def put(path, to:)
-    @routes[:put][path] = parse_action(to)
-  end
-
-  def delete(path, to:)
-    @routes[:delete][path] = parse_action(to)
-  end
-
-  # Resource helper - generates RESTful routes
-  def resources(name, only: nil, except: nil)
-    actions = %i[index show new create edit update destroy]
-    actions &= Array(only) if only
-    actions -= Array(except) if except
-
-    actions.each do |action|
-      case action
-      when :index
-        get "/#{name}", to: "#{name}#index"
-      when :show
-        get "/#{name}/:id", to: "#{name}#show"
-      when :new
-        get "/#{name}/new", to: "#{name}#new"
-      when :create
-        post "/#{name}", to: "#{name}#create"
-      when :edit
-        get "/#{name}/:id/edit", to: "#{name}#edit"
-      when :update
-        patch "/#{name}/:id", to: "#{name}#update"
-        put "/#{name}/:id", to: "#{name}#update"
-      when :destroy
-        delete "/#{name}/:id", to: "#{name}#destroy"
-      end
+  # Users routes (full RESTful)
+  resources :users do
+    member do
+      patch :activate
+      patch :deactivate
+    end
+    collection do
+      get :search
     end
   end
 
-  # Route matching
-  def match(method, path)
-    method = method.downcase.to_sym
-    @routes[method]&.each do |pattern, action|
-      params = match_path(pattern, path)
-      return [action, params] if params
+  # Items routes (full RESTful)
+  resources :items do
+    member do
+      patch :publish
+      patch :unpublish
     end
-    nil
-  end
-
-  # Display all routes
-  def display
-    @routes.each do |method, paths|
-      paths.each do |path, action|
-        puts "#{method.to_s.upcase.ljust(8)} #{path.ljust(30)} => #{action[:controller]}##{action[:action]}"
-      end
+    collection do
+      get :search
+      get :featured
     end
   end
 
-  private
+  # Sessions for authentication
+  get    'login',  to: 'sessions#new'
+  post   'login',  to: 'sessions#create'
+  delete 'logout', to: 'sessions#destroy'
 
-  def parse_action(to)
-    controller, action = to.split('#')
-    { controller: controller, action: action }
-  end
+  # Static pages
+  get 'about',   to: 'pages#about'
+  get 'contact', to: 'pages#contact'
 
-  def match_path(pattern, path)
-    pattern_parts = pattern.split('/')
-    path_parts = path.split('/')
-
-    return nil if pattern_parts.size != path_parts.size
-
-    params = {}
-    pattern_parts.zip(path_parts).each do |pat, pth|
-      if pat.start_with?(':')
-        params[pat[1..].to_sym] = pth
-      elsif pat != pth
-        return nil
-      end
+  # API namespace (optional)
+  namespace :api do
+    namespace :v1 do
+      resources :users, only: %i[index show create update destroy]
+      resources :items, only: %i[index show create update destroy]
     end
-    params
   end
-end
 
-# Define application routes
-ROUTES = Router.new
-
-ROUTES.instance_eval do
-  # Root
-  get '/', to: 'home#index'
-
-  # Users
-  resources :users
-
-  # Items
-  resources :items
+  # Admin namespace (optional)
+  namespace :admin do
+    root 'dashboard#index'
+    resources :users
+    resources :items
+  end
 end

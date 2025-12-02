@@ -1,0 +1,17 @@
+<div class="card item-card">
+  <div class="card-body">
+    <h3 class="card-title"><%= link_to item.name, item %></h3>
+    <p class="card-text"><%= truncate(item.description, length: 100) %></p>
+    <div class="card-meta">
+      <span class="price"><%= number_to_currency(item.price, unit: '€', format: '%n %u') %></span>
+      <% if item.in_stock? %>
+        <span class="badge badge-success"><%= t('items.card.in_stock') %></span>
+      <% else %>
+        <span class="badge badge-danger"><%= t('items.card.out_of_stock') %></span>
+      <% end %>
+    </div>
+  </div>
+  <div class="card-footer">
+    <%= link_to t('common.show'), item, class: 'btn btn-sm btn-outline' %>
+  </div>
+</div>

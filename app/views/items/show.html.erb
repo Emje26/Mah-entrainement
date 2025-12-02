@@ -1,0 +1,52 @@
+<% content_for :title, @item.name %>
+
+<div class="page-header">
+  <h1><%= @item.name %></h1>
+  <div class="actions">
+    <% if logged_in? %>
+      <%= link_to t('common.edit'), edit_item_path(@item), class: 'btn btn-primary' %>
+    <% end %>
+    <%= link_to t('common.back'), items_path, class: 'btn btn-outline' %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <div class="item-details">
+      <div class="item-price">
+        <span class="price-label"><%= Item.human_attribute_name(:price) %></span>
+        <span class="price-value"><%= number_to_currency(@item.price, unit: '€', format: '%n %u') %></span>
+      </div>
+
+      <div class="item-stock">
+        <span class="stock-label"><%= Item.human_attribute_name(:quantity) %></span>
+        <span class="stock-value"><%= @item.quantity %></span>
+        <% if @item.in_stock? %>
+          <span class="badge badge-success"><%= t('items.show.in_stock') %></span>
+        <% else %>
+          <span class="badge badge-danger"><%= t('items.show.out_of_stock') %></span>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="item-description">
+      <h3><%= Item.human_attribute_name(:description) %></h3>
+      <p><%= @item.description.presence || t('items.show.no_description') %></p>
+    </div>
+
+    <dl class="details-list">
+      <dt><%= Item.human_attribute_name(:created_at) %></dt>
+      <dd><%= l(@item.created_at, format: :long) %></dd>
+
+      <% if @item.published? %>
+        <dt><%= Item.human_attribute_name(:published_at) %></dt>
+        <dd><%= l(@item.published_at, format: :long) %></dd>
+      <% end %>
+
+      <% if @item.user %>
+        <dt><%= t('items.show.seller') %></dt>
+        <dd><%= link_to @item.user.name, @item.user %></dd>
+      <% end %>
+    </dl>
+  </div>
+</div>

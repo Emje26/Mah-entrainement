@@ -1,0 +1,24 @@
+<nav class="navbar">
+  <div class="navbar-brand">
+    <%= link_to 'Mah Entrainement', root_path, class: 'navbar-logo' %>
+  </div>
+
+  <div class="navbar-menu">
+    <%= link_to t('nav.home'), root_path, class: 'navbar-item' %>
+    <%= link_to t('nav.items'), items_path, class: 'navbar-item' %>
+    <%= link_to t('nav.users'), users_path, class: 'navbar-item' %>
+    <%= link_to t('nav.about'), about_path, class: 'navbar-item' %>
+    <%= link_to t('nav.contact'), contact_path, class: 'navbar-item' %>
+  </div>
+
+  <div class="navbar-end">
+    <% if logged_in? %>
+      <span class="navbar-item"><%= current_user.name %></span>
+      <%= link_to t('nav.profile'), user_path(current_user), class: 'navbar-item' %>
+      <%= button_to t('nav.logout'), logout_path, method: :delete, class: 'navbar-item btn btn-outline' %>
+    <% else %>
+      <%= link_to t('nav.login'), login_path, class: 'navbar-item btn btn-primary' %>
+      <%= link_to t('nav.signup'), new_user_path, class: 'navbar-item btn btn-outline' %>
+    <% end %>
+  </div>
+</nav>

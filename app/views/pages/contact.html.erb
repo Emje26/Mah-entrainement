@@ -1,0 +1,54 @@
+<% content_for :title, t('pages.contact.title') %>
+
+<div class="page-container">
+  <h1><%= t('pages.contact.title') %></h1>
+
+  <div class="contact-info">
+    <p><%= t('pages.contact.intro') %></p>
+
+    <ul class="contact-list">
+      <li>
+        <strong><%= t('pages.contact.email_label') %>:</strong>
+        <%= mail_to 'contact@example.com' %>
+      </li>
+      <li>
+        <strong><%= t('pages.contact.phone_label') %>:</strong>
+        +33 1 23 45 67 89
+      </li>
+      <li>
+        <strong><%= t('pages.contact.address_label') %>:</strong>
+        123 Rue Example, 75001 Paris, France
+      </li>
+    </ul>
+  </div>
+
+  <div class="contact-form">
+    <h2><%= t('pages.contact.form_title') %></h2>
+
+    <%= form_with url: '#', method: :post, class: 'form' do |f| %>
+      <div class="form-group">
+        <%= f.label :name, t('pages.contact.name') %>
+        <%= f.text_field :name, class: 'form-control', required: true %>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :email, t('pages.contact.email') %>
+        <%= f.email_field :email, class: 'form-control', required: true %>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :subject, t('pages.contact.subject') %>
+        <%= f.text_field :subject, class: 'form-control', required: true %>
+      </div>
+
+      <div class="form-group">
+        <%= f.label :message, t('pages.contact.message') %>
+        <%= f.text_area :message, class: 'form-control', rows: 5, required: true %>
+      </div>
+
+      <div class="form-group">
+        <%= f.submit t('pages.contact.send'), class: 'btn btn-primary' %>
+      </div>
+    <% end %>
+  </div>
+</div>

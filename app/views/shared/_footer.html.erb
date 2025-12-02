@@ -1,0 +1,31 @@
+<footer class="footer">
+  <div class="container">
+    <div class="footer-content">
+      <div class="footer-section">
+        <h4>Mah Entrainement</h4>
+        <p><%= t('footer.description') %></p>
+      </div>
+
+      <div class="footer-section">
+        <h4><%= t('footer.links') %></h4>
+        <ul>
+          <li><%= link_to t('nav.home'), root_path %></li>
+          <li><%= link_to t('nav.about'), about_path %></li>
+          <li><%= link_to t('nav.contact'), contact_path %></li>
+        </ul>
+      </div>
+
+      <div class="footer-section">
+        <h4><%= t('footer.legal') %></h4>
+        <ul>
+          <li><%= link_to t('footer.terms'), '#' %></li>
+          <li><%= link_to t('footer.privacy'), '#' %></li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="footer-bottom">
+      <p>&copy; <%= Date.current.year %> Mah Entrainement. <%= t('footer.rights') %></p>
+    </div>
+  </div>
+</footer>

@@ -1,0 +1,18 @@
+<% content_for :title, t('items.index.title') %>
+
+<div class="page-header">
+  <h1><%= t('items.index.title') %></h1>
+  <% if logged_in? %>
+    <%= link_to t('items.index.new'), new_item_path, class: 'btn btn-primary' %>
+  <% end %>
+</div>
+
+<% if @items.any? %>
+  <div class="items-grid">
+    <% @items.each do |item| %>
+      <%= render 'card', item: item %>
+    <% end %>
+  </div>
+<% else %>
+  <p class="empty-state"><%= t('items.index.empty') %></p>
+<% end %>

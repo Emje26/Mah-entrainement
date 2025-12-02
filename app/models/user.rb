@@ -1,96 +1,61 @@
 # frozen_string_literal: true
 
-# User model - Represents a user in the system
-class User
-  attr_accessor :id, :name, :email, :password_digest, :created_at, :updated_at
+# == Schema Information
+#
+# Table name: users
+#
+#  id              :integer          not null, primary key
+#  name            :string           not null
+#  email           :string           not null
+#  password_digest :string           not null
+#  admin           :boolean          default(FALSE)
+#  active          :boolean          default(TRUE)
+#  created_at      :datetime         not null
+#  updated_at      :datetime         not null
+#
+class User < ApplicationRecord
+  # Secure password with bcrypt
+  has_secure_password
 
-  @@users = []
-  @@next_id = 1
+  # Associations
+  has_many :items, dependent: :nullify
 
-  def initialize(attributes = {})
-    @id = attributes[:id]
-    @name = attributes[:name]
-    @email = attributes[:email]
-    @password_digest = attributes[:password_digest]
-    @created_at = attributes[:created_at] || Time.now
-    @updated_at = attributes[:updated_at] || Time.now
-    @errors = []
-  end
+  # Validations
+  validates :name, presence: true, length: { minimum: 2, maximum: 100 }
+  validates :email, presence: true,
+                    uniqueness: { case_sensitive: false },
+                    format: { with: URI::MailTo::EMAIL_REGEXP }
+  validates :password, length: { minimum: 6 }, if: -> { new_record? || password.present? }
 
-  # Class methods
-  class << self
-    def all
-      @@users.dup
-    end
+  # Callbacks
+  before_save :downcase_email
 
-    def find(id)
-      @@users.find { |user| user.id == id.to_i }
-    end
-
-    def find_by(attributes)
-      @@users.find do |user|
-        attributes.all? { |key, value| user.send(key) == value }
-      end
-    end
-
-    def create(attributes)
-      user = new(attributes)
-      user.save
-      user
-    end
-
-    def count
-      @@users.size
-    end
-  end
+  # Scopes
+  scope :active, -> { where(active: true) }
+  scope :admins, -> { where(admin: true) }
+  scope :recent, -> { order(created_at: :desc) }
+  scope :search, ->(query) { where('name LIKE ? OR email LIKE ?', "%#{query}%", "%#{query}%") }
 
   # Instance methods
-  def new_record?
-    @id.nil?
+  def admin?
+    admin == true
   end
 
-  def save
-    return false unless valid?
-
-    if new_record?
-      @id = @@next_id
-      @@next_id += 1
-      @created_at = Time.now
-      @@users << self
-    end
-    @updated_at = Time.now
-    true
+  def activate!
+    update(active: true)
   end
 
-  def update(attributes)
-    attributes.each do |key, value|
-      send("#{key}=", value) if respond_to?("#{key}=")
-    end
-    save
+  def deactivate!
+    update(active: false)
   end
 
-  def destroy
-    @@users.delete(self)
+  def full_name
+    name
   end
 
-  def valid?
-    @errors = []
-    @errors << "Name can't be blank" if name.nil? || name.empty?
-    @errors << "Email can't be blank" if email.nil? || email.empty?
-    @errors.empty?
-  end
+  private
 
-  def errors
-    @errors
-  end
-
-  def to_h
-    {
-      id: @id,
-      name: @name,
-      email: @email,
-      created_at: @created_at,
-      updated_at: @updated_at
-    }
+  def downcase_email
+    self.email = email.downcase if email.present?
   end
 end

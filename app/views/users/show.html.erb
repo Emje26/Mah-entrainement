@@ -1,0 +1,46 @@
+<% content_for :title, @user.name %>
+
+<div class="page-header">
+  <h1><%= @user.name %></h1>
+  <div class="actions">
+    <%= link_to t('common.edit'), edit_user_path(@user), class: 'btn btn-primary' %>
+    <%= link_to t('common.back'), users_path, class: 'btn btn-outline' %>
+  </div>
+</div>
+
+<div class="card">
+  <div class="card-body">
+    <dl class="details-list">
+      <dt><%= User.human_attribute_name(:email) %></dt>
+      <dd><%= @user.email %></dd>
+
+      <dt><%= User.human_attribute_name(:created_at) %></dt>
+      <dd><%= l(@user.created_at, format: :long) %></dd>
+
+      <dt><%= User.human_attribute_name(:updated_at) %></dt>
+      <dd><%= l(@user.updated_at, format: :long) %></dd>
+
+      <% if @user.respond_to?(:active) %>
+        <dt><%= t('users.show.status') %></dt>
+        <dd>
+          <% if @user.active %>
+            <span class="badge badge-success"><%= t('users.show.active') %></span>
+          <% else %>
+            <span class="badge badge-danger"><%= t('users.show.inactive') %></span>
+          <% end %>
+        </dd>
+      <% end %>
+    </dl>
+  </div>
+</div>
+
+<% if @user.items&.any? %>
+  <div class="section">
+    <h2><%= t('users.show.items') %></h2>
+    <div class="items-grid">
+      <% @user.items.each do |item| %>
+        <%= render 'items/card', item: item %>
+      <% end %>
+    </div>
+  </div>
+<% end %>

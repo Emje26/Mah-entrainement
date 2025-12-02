@@ -1,0 +1,35 @@
+<% content_for :title, t('home.title') %>
+
+<section class="hero">
+  <h1><%= t('home.welcome') %></h1>
+  <p><%= t('home.subtitle') %></p>
+  <div class="hero-actions">
+    <%= link_to t('home.get_started'), new_user_path, class: 'btn btn-primary btn-lg' %>
+    <%= link_to t('home.learn_more'), about_path, class: 'btn btn-outline btn-lg' %>
+  </div>
+</section>
+
+<% if @featured_items&.any? %>
+  <section class="featured-items">
+    <h2><%= t('home.featured_items') %></h2>
+    <div class="items-grid">
+      <% @featured_items.each do |item| %>
+        <%= render 'items/card', item: item %>
+      <% end %>
+    </div>
+  </section>
+<% end %>
+
+<% if @recent_items&.any? %>
+  <section class="recent-items">
+    <h2><%= t('home.recent_items') %></h2>
+    <div class="items-grid">
+      <% @recent_items.each do |item| %>
+        <%= render 'items/card', item: item %>
+      <% end %>
+    </div>
+    <div class="text-center">
+      <%= link_to t('home.view_all'), items_path, class: 'btn btn-outline' %>
+    </div>
+  </section>
+<% end %>

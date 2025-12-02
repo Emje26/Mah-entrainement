@@ -1,0 +1,11 @@
+<% content_for :title, t('users.new.title') %>
+
+<div class="auth-container">
+  <h1><%= t('users.new.title') %></h1>
+
+  <%= render 'form', user: @user %>
+
+  <div class="auth-links">
+    <p><%= t('users.new.have_account') %> <%= link_to t('users.new.login_link'), login_path %></p>
+  </div>
+</div>

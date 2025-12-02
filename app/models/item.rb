@@ -1,110 +1,72 @@
 # frozen_string_literal: true
 
-# Item model - Represents an item in the system
-class Item
-  attr_accessor :id, :name, :description, :price, :quantity, :created_at, :updated_at
+# == Schema Information
+#
+# Table name: items
+#
+#  id           :integer          not null, primary key
+#  name         :string           not null
+#  description  :text
+#  price        :decimal(10, 2)   default(0.0), not null
+#  quantity     :integer          default(0), not null
+#  published    :boolean          default(FALSE)
+#  featured     :boolean          default(FALSE)
+#  published_at :datetime
+#  user_id      :integer
+#  created_at   :datetime         not null
+#  updated_at   :datetime         not null
+#
+class Item < ApplicationRecord
+  # Associations
+  belongs_to :user, optional: true
 
-  @@items = []
-  @@next_id = 1
+  # Validations
+  validates :name, presence: true, length: { minimum: 2, maximum: 255 }
+  validates :price, presence: true, numericality: { greater_than_or_equal_to: 0 }
+  validates :quantity, presence: true, numericality: { only_integer: true, greater_than_or_equal_to: 0 }
 
-  def initialize(attributes = {})
-    @id = attributes[:id]
-    @name = attributes[:name]
-    @description = attributes[:description]
-    @price = attributes[:price].to_f
-    @quantity = attributes[:quantity].to_i
-    @created_at = attributes[:created_at] || Time.now
-    @updated_at = attributes[:updated_at] || Time.now
-    @errors = []
-  end
+  # Scopes
+  scope :published, -> { where(published: true) }
+  scope :unpublished, -> { where(published: false) }
+  scope :featured, -> { where(featured: true) }
+  scope :in_stock, -> { where('quantity > 0') }
+  scope :out_of_stock, -> { where(quantity: 0) }
+  scope :recent, -> { order(created_at: :desc) }
+  scope :by_price, ->(direction = :asc) { order(price: direction) }
+  scope :search, ->(query) { where('name LIKE ? OR description LIKE ?', "%#{query}%", "%#{query}%") }
 
-  # Class methods
-  class << self
-    def all
-      @@items.dup
-    end
-
-    def find(id)
-      @@items.find { |item| item.id == id.to_i }
-    end
-
-    def find_by(attributes)
-      @@items.find do |item|
-        attributes.all? { |key, value| item.send(key) == value }
-      end
-    end
-
-    def where(attributes)
-      @@items.select do |item|
-        attributes.all? { |key, value| item.send(key) == value }
-      end
-    end
-
-    def create(attributes)
-      item = new(attributes)
-      item.save
-      item
-    end
-
-    def count
-      @@items.size
-    end
-  end
+  # Callbacks
+  before_save :set_published_at
 
   # Instance methods
-  def new_record?
-    @id.nil?
+  def publish!
+    update(published: true, published_at: Time.current)
   end
 
-  def save
-    return false unless valid?
-
-    if new_record?
-      @id = @@next_id
-      @@next_id += 1
-      @created_at = Time.now
-      @@items << self
-    end
-    @updated_at = Time.now
-    true
+  def unpublish!
+    update(published: false, published_at: nil)
   end
 
-  def update(attributes)
-    attributes.each do |key, value|
-      send("#{key}=", value) if respond_to?("#{key}=")
-    end
-    save
+  def in_stock?
+    quantity.positive?
   end
 
-  def destroy
-    @@items.delete(self)
-  end
-
-  def valid?
-    @errors = []
-    @errors << "Name can't be blank" if name.nil? || name.empty?
-    @errors << "Price must be positive" if price.nil? || price < 0
-    @errors << "Quantity must be non-negative" if quantity.nil? || quantity < 0
-    @errors.empty?
-  end
-
-  def errors
-    @errors
+  def out_of_stock?
+    quantity.zero?
   end
 
   def total_value
     price * quantity
   end
 
-  def to_h
-    {
-      id: @id,
-      name: @name,
-      description: @description,
-      price: @price,
-      quantity: @quantity,
-      created_at: @created_at,
-      updated_at: @updated_at
-    }
+  def formatted_price
+    ActionController::Base.helpers.number_to_currency(price, unit: '€', format: '%n %u')
+  end
+
+  private
+
+  def set_published_at
+    self.published_at = Time.current if published_changed? && published?
+    self.published_at = nil if published_changed? && !published?
   end
 end
