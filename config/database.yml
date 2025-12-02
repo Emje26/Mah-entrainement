@@ -1,0 +1,25 @@
+# Database Configuration
+# Supports SQLite, PostgreSQL, and MySQL
+
+default: &default
+  adapter: sqlite3
+  pool: 5
+  timeout: 5000
+
+development:
+  <<: *default
+  database: db/development.sqlite3
+
+test:
+  <<: *default
+  database: db/test.sqlite3
+
+production:
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch('RAILS_MAX_THREADS', 5) %>
+  database: <%= ENV['DATABASE_NAME'] %>
+  username: <%= ENV['DATABASE_USERNAME'] %>
+  password: <%= ENV['DATABASE_PASSWORD'] %>
+  host: <%= ENV['DATABASE_HOST'] %>
+  port: <%= ENV.fetch('DATABASE_PORT', 5432) %>

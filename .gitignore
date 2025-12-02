@@ -3,22 +3,44 @@ node_modules/
 vendor/
 venv/
 __pycache__/
+/vendor/bundle
+/.bundle
 
 # Environnement
 .env
 .env.local
 .env.*.local
 
+# Base de données
+*.sqlite3
+*.sqlite3-journal
+/db/*.sqlite3
+/db/*.sqlite3-journal
+
 # Logs
 logs/
+/log/*
+!log/.gitkeep
 *.log
 npm-debug.log*
+
+# Fichiers temporaires
+/tmp/*
+!tmp/.gitkeep
+*.tmp
+*.temp
 
 # Build
 dist/
 build/
 *.o
 *.exe
+
+# Cache
+.cache/
+/.cache
+/public/assets
+*.pyc
 
 # IDE
 .idea/
@@ -31,6 +53,22 @@ build/
 .DS_Store
 Thumbs.db
 
-# Cache
-.cache/
-*.pyc
+# Coverage
+/coverage/
+.simplecov
+
+# Test artifacts
+/spec/reports/
+
+# Secrets
+*.pem
+*.key
+credentials.yml
+secrets.yml
+
+# Build artifacts
+*.gem
+pkg/
+
+# Byebug
+.byebug_history
