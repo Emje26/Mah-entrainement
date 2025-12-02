@@ -1,0 +1,45 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# CLI principale - Point d'entrée pour les commandes
+
+require_relative '../config/environment'
+
+# Parse command line arguments
+command = ARGV[0]
+args = ARGV[1..]
+
+case command
+when 'server', 's'
+  puts "Starting server..."
+  # TODO: Start web server
+when 'console', 'c'
+  puts "Loading console..."
+  require 'irb'
+  IRB.start
+when 'db:migrate'
+  puts "Running migrations..."
+  # TODO: Run database migrations
+when 'db:seed'
+  puts "Seeding database..."
+  load File.expand_path('../db/seeds.rb', __dir__)
+when 'routes'
+  puts "Available routes:"
+  # TODO: Display routes
+when nil, 'help', '-h', '--help'
+  puts <<~HELP
+    Usage: bin/console [command]
+
+    Commands:
+      server, s       Start the web server
+      console, c      Start interactive console
+      db:migrate      Run database migrations
+      db:seed         Seed the database
+      routes          Display all routes
+      help            Show this help message
+  HELP
+else
+  puts "Unknown command: #{command}"
+  puts "Run 'bin/console help' for available commands"
+  exit 1
+end

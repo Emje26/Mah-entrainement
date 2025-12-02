@@ -1,0 +1,30 @@
+<h1>Users</h1>
+
+<a href="/users/new" class="btn btn-primary">New User</a>
+
+<table class="table">
+  <thead>
+    <tr>
+      <th>ID</th>
+      <th>Name</th>
+      <th>Email</th>
+      <th>Created At</th>
+      <th>Actions</th>
+    </tr>
+  </thead>
+  <tbody>
+    <% users.each do |user| %>
+      <tr>
+        <td><%= user.id %></td>
+        <td><%= user.name %></td>
+        <td><%= user.email %></td>
+        <td><%= user.created_at %></td>
+        <td>
+          <a href="/users/<%= user.id %>">Show</a>
+          <a href="/users/<%= user.id %>/edit">Edit</a>
+          <a href="/users/<%= user.id %>" data-method="delete" data-confirm="Are you sure?">Delete</a>
+        </td>
+      </tr>
+    <% end %>
+  </tbody>
+</table>
