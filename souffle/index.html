@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Souffle VR · Gorgias</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<style>
+/* VOICE: séance d'auto-hypnose, lente, grave, sans rien qui presse
+   IDEA: le jeu Souffle, mais la spirale t'entoure et les voix du Gorgias te parlent
+   PICTURE: la double spirale qui respire, vue de l'intérieur, un œil sombre au centre
+   COLOUR and TYPE: nuit #07080f, ivoire, halo ambre ; Cormorant Garamond
+   LAYOUT: scène plein écran, tout le texte au centre, une carte d'aide repliable */
+:root{color-scheme:dark;--bg:#07080f;--txt:#efe9dc;--mut:#a9a8b8;--acc:#e8c9a0}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--txt);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;overflow:hidden}
+#card{position:fixed;z-index:10;top:12px;left:12px;width:min(390px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;background:rgba(7,8,15,.94);border:1px solid rgba(232,201,160,.45);border-radius:14px;padding:14px 16px}
+#card h1{font:600 30px/1.05 "Cormorant Garamond",Georgia,serif;margin:0 0 6px}
+#card p{margin:0 0 8px;font-size:15px}
+#card .m{color:var(--mut);font-size:14px}
+#card b{color:var(--acc)}
+#card a{color:var(--acc)}
+#card button{font:600 16px inherit;min-height:44px;padding:0 18px;border-radius:999px;border:0;background:var(--acc);color:#07080f;cursor:pointer}
+#card button:focus-visible{outline:2px solid var(--txt);outline-offset:2px}
+#card summary{cursor:pointer;color:var(--acc);padding:6px 0}
+#card.min>:not(h1):not(button){display:none}
+#fiche p{font-size:14px;margin:0 0 10px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/aframe@1.7.1/dist/aframe-master.min.js"></script>
+<script src="data.js"></script>
+<script>
+AFRAME.registerComponent('txt',{
+  dependencies:['geometry','material'],
+  schema:{t:{default:''},sub:{default:''},bg:{default:'#12141f'},fg:{default:'#efe9dc'},ac:{default:'#e8c9a0'},max:{default:60},serif:{default:false}},
+  init(){const g=this.el.getAttribute('geometry');this.c=document.createElement('canvas');this.c.width=Math.round(g.width*700);this.c.height=Math.round(g.height*700);this.tex=new THREE.CanvasTexture(this.c);this.tex.colorSpace=THREE.SRGBColorSpace;this.tex.anisotropy=4},
+  update(){this.draw()},
+  tick(){const m=this.el.getObject3D('mesh');if(m&&m.material&&m.material.map!==this.tex){m.material.map=this.tex;m.material.transparent=true;m.material.needsUpdate=true}},
+  wrap(x,s,w){const o=[];for(const p of String(s).split('\n')){let l='';for(const k of p.split(' ')){const t=l?l+' '+k:k;if(x.measureText(t).width>w&&l){o.push(l);l=k}else l=t}o.push(l)}return o},
+  draw(){const d=this.data,c=this.c,x=c.getContext('2d'),W=c.width,H=c.height,pad=Math.min(W,H)*.14,r=Math.min(W,H)*.3;
+    x.clearRect(0,0,W,H);x.fillStyle=d.bg;x.beginPath();x.roundRect?x.roundRect(3,3,W-6,H-6,r):x.rect(3,3,W-6,H-6);x.fill();x.strokeStyle=d.ac;x.lineWidth=3;x.stroke();
+    const fam=d.serif?'"Cormorant Garamond",Georgia,serif':'-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif',sh=d.sub?d.max*.5:0;let size=d.max,L=[];
+    for(;size>=18;size-=2){x.font=`600 ${size}px ${fam}`;L=this.wrap(x,d.t,W-pad*2);if(L.length*size*1.15+sh*1.4<=H-pad*.9)break}
+    let y=(H-(L.length*size*1.15+sh*1.4))/2;x.textAlign='center';x.textBaseline='top';x.fillStyle=d.fg;for(const l of L){x.fillText(l,W/2,y);y+=size*1.15}
+    if(sh){x.font=`500 ${sh}px ${fam}`;x.globalAlpha=.75;x.fillText(d.sub,W/2,y+sh*.25);x.globalAlpha=1}this.tex.needsUpdate=true}
+});
+AFRAME.registerComponent('loop',{tick(t,dt){window.__u&&window.__u(Math.min(dt,100)/1000)}});
+</script>
+</head>
+<body>
+<div id="card">
+  <h1>Souffle VR · Gorgias</h1>
+  <p>La spirale suit ta respiration. Une phrase du Gorgias par souffle, dite par celui qui la soutient : <b>Socrate</b>, <b>Gorgias</b>, <b>Polos</b>, <b>Calliclès</b>. D'abord tu écoutes. Ensuite tu retrouves chaque phrase avant de l'entendre, puis tu la dis en expirant.</p>
+  <p id="vr" class="m"></p>
+  <p class="m">Assis ou allongé, casque audio conseillé. Si la tête tourne ou si tu as la nausée : respire normalement, ferme les yeux, retire le casque. Aucun flash.</p>
+  <p class="m">Le souffle lent calme et stabilise l'attention. Ce qui ancre, c'est retrouver la phrase de mémoire et la dire.</p>
+  <details><summary>La fiche complète</summary><div id="fiche"></div></details>
+  <button id="fold">Replier</button>
+</div>
+
+<a-scene loop background="color:#07080f" renderer="antialias:true;colorManagement:true" cursor="rayOrigin:mouse" raycaster="objects:.btn" vr-mode-ui="enabled:true" loading-screen="dotsColor:#e8c9a0;backgroundColor:#07080f">
+  <a-entity id="stage"><a-entity id="menu" position="0 1.6 -2.2"></a-entity></a-entity>
+  <a-entity id="rig">
+    <a-entity id="cam" camera look-controls position="0 1.6 0"></a-entity>
+    <a-entity laser-controls="hand:right;model:false" raycaster="objects:.btn;far:12;lineColor:#e8c9a0;lineOpacity:0.45"></a-entity>
+    <a-entity laser-controls="hand:left;model:false" raycaster="objects:.btn;far:12;lineColor:#e8c9a0;lineOpacity:0.45"></a-entity>
+  </a-entity>
+</a-scene>
+
+<script>
+{
+const D=window.SOUFFLE,$=s=>document.querySelector(s),scene=$('a-scene'),T=THREE;
+const RY=[5000,1000,7000],CAS=['',"A · j'affirme","E · j'explique","I · j'illustre"];
+const COL={soc:[.93,.8,.62],gor:[.66,.48,.92],pol:[.42,.66,.98],cal:[.98,.42,.32]},ACC=[.91,.79,.63];
+const opt={set:0,full:1,passes:2,spin:0};
+try{Object.assign(opt,JSON.parse(localStorage.getItem('souffle-vr')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('souffle-vr',JSON.stringify(opt))}catch(e){}};
+const ease=x=>.5-.5*Math.cos(Math.PI*x),cl=x=>x<0?0:x>1?1:x,now=()=>performance.now()*(window.__k||1);
+const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
+
+/* ---------- carte d'aide ---------- */
+$('#fold').onclick=()=>{const c=$('#card');c.classList.toggle('min');$('#fold').textContent=c.classList.contains('min')?'Aide':'Replier'};
+const fold=()=>{$('#card').classList.add('min');$('#fold').textContent='Aide'};
+$('#fiche').innerHTML=D.sets.map(s=>`<p><b>${esc(s.name)} · ${esc(s.sub)}</b></p>`+s.notions.map(n=>`<p><b>${esc(D.names[n.who])} · ${esc(n.title)}</b><br>A · ${esc(n.s[0])}<br>E · ${esc(n.s[1])}<br>I · ${esc(n.s[2])}</p>`).join('')).join('');
+const VR_URL='';
+const vrMsg=ok=>{$('#vr').innerHTML=ok?'Immersion disponible : touche le bouton VR en bas à droite, puis vise avec la manette et appuie sur la gâchette.':'Ici, la séance tourne en fenêtre. '+(VR_URL?`Pour l'immersion dans le casque, ouvre <a href="${VR_URL}">${VR_URL.replace('https://','')}</a> dans le navigateur du Quest.`:'L\'immersion demande le casque et le lien direct du jeu.')};
+if(navigator.xr&&navigator.xr.isSessionSupported)navigator.xr.isSessionSupported('immersive-vr').then(vrMsg).catch(()=>vrMsg(false));else vrMsg(false);
+
+/* ---------- spirale immersive ---------- */
+const VS='varying vec3 vD;void main(){vD=normalize(position);gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.0);}';
+const FS=`precision highp float;varying vec3 vD;uniform float uA,uB,uP,uOn;uniform vec3 uH;
+float sp(float th,float r,float a){float v=sin(4.0*(th+a)+17.0*log(r));float w=0.05+0.0162/r;float t=clamp((v+w)/(2.0*w),0.0,1.0);return t*t*(3.0-2.0*t);}
+void main(){vec3 d=normalize(vD);float rho=acos(clamp(-d.z,-1.0,1.0));float th=atan(d.y,d.x);
+float r=max(rho/(1.12+0.22*uB),0.0005);vec3 A=vec3(0.937,0.914,0.863),K=vec3(0.027,0.031,0.059);
+vec3 c=mix(K,A,sp(th,r,uA));vec3 c2=mix(K,A,sp(3.14159265-th,r/1.5,-uA*0.55+1.3));c=mix(c,abs(c-c2),0.9);
+c*=vec3(mix(0.588,1.0,uB),mix(0.647,0.839,uB),mix(1.0,0.69,uB));
+float R=0.42+0.085*uB,e=rho/(R*1.45);float ea=e<0.62?mix(1.0,0.97,e/0.62):e<0.82?mix(0.97,0.6,(e-0.62)/0.2):e<1.0?mix(0.6,0.0,(e-0.82)/0.18):0.0;c=mix(c,K,ea);
+float hr=(rho-0.7*R)/(0.55*R);if(hr>0.0&&hr<1.0)c+=uH*sin(hr*3.14159265);
+float v0=0.95-0.25*uP,v1=1.45-0.3*uP;c=mix(c,K,clamp((rho-v0)/(v1-v0),0.0,1.0)*0.92);
+gl_FragColor=vec4(mix(K,c,uOn),1.0);}`;
+const U={uA:{value:0},uB:{value:0},uP:{value:0},uOn:{value:.28},uH:{value:new T.Vector3()}};
+let stage,P={},lvl=0,menuAng=0;
+function plane(w,h,y,px){const c=document.createElement('canvas');c.width=Math.round(w*px);c.height=Math.round(h*px);const tex=new T.CanvasTexture(c);tex.colorSpace=T.SRGBColorSpace;tex.anisotropy=4;
+  const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:tex,transparent:true,depthTest:false,depthWrite:false,toneMapped:false,opacity:0}));m.position.set(0,1.6+y,-2.4);m.renderOrder=5;stage.add(m);return{c,tex,m}}
+function wrap(x,s,w){const o=[];let l='';for(const k of String(s).split(' ')){const t=l?l+' '+k:k;if(x.measureText(t).width>w&&l){o.push(l);l=k}else l=t}o.push(l);return o}
+function write(p,text,o){const x=p.c.getContext('2d'),W=p.c.width,H=p.c.height;x.clearRect(0,0,W,H);
+  if(text){let size=o.size*H,L;for(;;){x.font=`${o.style||''} ${o.weight||500} ${size}px ${o.font||'"Cormorant Garamond",Georgia,serif'}`;if('letterSpacing' in x)x.letterSpacing=o.ls||'0px';L=wrap(x,text,W*.95);if(L.length*size*1.14<=H*.98||size<16)break;size*=.93}
+    x.fillStyle=o.color||'#fbf6ea';x.textAlign='center';x.textBaseline='middle';const y0=H/2-(L.length-1)*size*1.14/2;L.forEach((l,i)=>x.fillText(l,W/2,y0+i*size*1.14))}
+  p.tex.needsUpdate=true}
+const SANS='-apple-system,"Segoe UI",Roboto,Helvetica,Arial,sans-serif';
+function setMain(t){const o={size:t.length>12?.2:.5,weight:t.length>12?500:600,style:t.length>12?'italic':''};write(P.main,t,o);write(P.echo,t,o)}
+const setCas=t=>write(P.cas,t.toUpperCase(),{size:.5,font:SANS,weight:600,color:'#e8c9a0',ls:'7px'});
+const setLem=t=>write(P.lem,t,{size:.62,style:'italic',color:'#cfc8ba'});
+const setPh=t=>write(P.ph,t.toUpperCase(),{size:.46,font:SANS,weight:600,color:'#d9d2c2',ls:'5px'});
+
+/* ---------- son ---------- */
+let ctx=null,master=null,wet=null,an=null,anBuf=null,drone=null;const bufs={},voice={};
+function audioInit(){if(ctx){ctx.resume&&ctx.resume();return}
+  try{ctx=new(window.AudioContext||window.webkitAudioContext)();master=ctx.createGain();master.connect(ctx.destination);
+    const dl=ctx.createDelay(1),fb=ctx.createGain(),lp=ctx.createBiquadFilter();dl.delayTime.value=.34;fb.gain.value=.36;lp.type='lowpass';lp.frequency.value=1800;
+    wet=ctx.createGain();wet.connect(dl);dl.connect(lp);lp.connect(fb);fb.connect(dl);lp.connect(master);
+    an=ctx.createAnalyser();an.fftSize=512;anBuf=new Uint8Array(512)}catch(e){ctx=null}}
+async function load(name){if(!ctx||bufs[name])return;try{const r=await fetch(D.clips[name].file);if(!r.ok)throw 0;bufs[name]=await ctx.decodeAudioData(await r.arrayBuffer())}catch(e){bufs[name]=null}}
+const clipDur=(sp,k)=>{const c=D.clips[sp];return k&&c&&c.map[k]?c.map[k][1]:0};
+const hush=()=>{for(const k in voice){try{voice[k].stop()}catch(e){}delete voice[k]}};
+const tv=new T.Vector3(),tq=new T.Quaternion(),tf=new T.Vector3(),tu=new T.Vector3();
+function play(sp,key,who){if(!ctx||!bufs[sp]||!key)return;const m=D.clips[sp].map[key];if(!m)return;const ch=who?'c':'g';try{voice[ch]&&voice[ch].stop()}catch(e){}
+  const src=ctx.createBufferSource(),g=ctx.createGain();src.buffer=bufs[sp];g.gain.value=1;src.connect(g);let out=g;
+  if(who){const pn=ctx.createPanner();pn.panningModel='HRTF';pn.distanceModel='inverse';pn.refDistance=2.4;pn.rolloffFactor=.5;
+    stage.updateMatrixWorld();tv.set(who==='soc'?-1.5:1.5,1.6,-1.9);stage.localToWorld(tv);
+    if(pn.positionX){pn.positionX.value=tv.x;pn.positionY.value=tv.y;pn.positionZ.value=tv.z}else pn.setPosition(tv.x,tv.y,tv.z);g.connect(pn);g.connect(an);out=pn}
+  out.connect(master);const w=ctx.createGain();w.gain.value=who?.3:.14;out.connect(w);w.connect(wet);
+  src.start(0,Math.max(0,m[0]-.02),m[1]+.05);voice[ch]=src}
+function listen(){if(!ctx)return;const cam=$('#cam').object3D,l=ctx.listener;cam.getWorldPosition(tv);cam.getWorldQuaternion(tq);tf.set(0,0,-1).applyQuaternion(tq);tu.set(0,1,0).applyQuaternion(tq);
+  if(l.positionX){l.positionX.value=tv.x;l.positionY.value=tv.y;l.positionZ.value=tv.z;l.forwardX.value=tf.x;l.forwardY.value=tf.y;l.forwardZ.value=tf.z;l.upX.value=tu.x;l.upY.value=tu.y;l.upZ.value=tu.z}
+  else{l.setPosition(tv.x,tv.y,tv.z);l.setOrientation(tf.x,tf.y,tf.z,tu.x,tu.y,tu.z)}}
+function droneStart(sec){if(!ctx)return;const g=ctx.createGain(),os=[],t=ctx.currentTime;g.gain.value=0;g.connect(master);
+  const osc=(f,v,pan)=>{const o=ctx.createOscillator(),og=ctx.createGain();o.frequency.value=f;og.gain.value=v;o.connect(og);if(pan&&ctx.createStereoPanner){const pn=ctx.createStereoPanner();pn.pan.value=pan;og.connect(pn);pn.connect(g)}else og.connect(g);o.start();os.push(o);return o};
+  osc(110,.9,-1);const r=osc(118,.9,1);try{r.frequency.setValueAtTime(118,t);r.frequency.linearRampToValueAtTime(114.5,t+Math.max(30,sec*.6))}catch(e){}osc(55,.5,0);osc(165,.18,0);drone={g,os}}
+const droneSet=v=>{drone&&drone.g.gain.setTargetAtTime(v,ctx.currentTime,.25)};
+function droneStop(){if(!drone)return;const d=drone;drone=null;d.g.gain.setTargetAtTime(0,ctx.currentTime,.2);setTimeout(()=>d.os.forEach(o=>{try{o.stop()}catch(e){}}),900)}
+function bell(){if(!ctx)return;const o=ctx.createOscillator(),g=ctx.createGain(),t=ctx.currentTime;o.frequency.value=528;g.gain.setValueAtTime(0,t);g.gain.linearRampToValueAtTime(.06,t+.03);g.gain.exponentialRampToValueAtTime(.0001,t+.9);o.connect(g);g.connect(master);o.start(t);o.stop(t+1)}
+
+/* ---------- séance ---------- */
+let S=null;
+function build(){const set=D.sets[opt.set],seq=[],ind=opt.full?D.ind:D.short.map(i=>D.ind[i]);
+  const add=(title,l)=>seq.push({k:'ind',title,i:l.i,o:l.o,txt:l.txt});
+  ind.forEach(l=>add('descente',l));D.pre.forEach(l=>add('descente',l));
+  const lis=Math.max(1,Math.floor(opt.passes*.4));
+  for(let ps=0;ps<opt.passes;ps++){const hide=ps>=lis;
+    if(ps>0){(hide?D.find:D.again).forEach(l=>add('plus profond',l));D.form.forEach(l=>add('plus profond',l))}
+    set.notions.forEach((n,ni)=>{
+      seq.push({k:'aei',step:0,who:n.who,title:n.title,cas:D.names[n.who],txt:n.title,hide:false,i:n.tk});
+      for(let st=1;st<=3;st++)seq.push({k:'aei',step:st,who:n.who,title:n.title,cas:CAS[st],txt:n.s[st-1],hide,i:D.labels[st-1],o:'n'+ni+'_'+(st-1)})})}
+  D.post.forEach(l=>add('retour',l));D.out.forEach(l=>add('retour',l));
+  seq.forEach(e=>{const a=clipDur('guide',e.i),b=e.k==='aei'?clipDur(set.id,e.o):clipDur('guide',e.o);e.d=[Math.max(RY[0],a*1000+300),RY[1],Math.max(RY[2],b*1000+500)]});
+  return seq}
+const total=q=>q.reduce((a,e)=>a+e.d[0]+e.d[1]+e.d[2],0);
+function align(){if(!scene.is('vr-mode')){stage.position.set(0,0,0);stage.rotation.set(0,0,0);return}
+  const cam=$('#cam').object3D;cam.getWorldPosition(tv);cam.getWorldQuaternion(tq);tf.set(0,0,-1).applyQuaternion(tq);stage.position.set(tv.x,tv.y-1.6,tv.z);stage.rotation.set(0,Math.atan2(-tf.x,-tf.z),0)}
+async function start(){audioInit();fold();align();showMenu(false);
+  const seq=build(),set=D.sets[opt.set];setCas('');setLem('Les voix arrivent');setMain('');setPh('');P.lem.m.material.opacity=.9;
+  await Promise.all([load('guide'),load(set.id)]);
+  const t=now();S={seq,set,i:0,ph:-1,t0:t,start:t,ang:0,f:0,paused:false,talk:null,tot:total(seq)};
+  droneStart(S.tot/1000);try{navigator.wakeLock&&navigator.wakeLock.request('screen').catch(()=>{})}catch(e){}
+  showHud(true);setPhase(0)}
+function setPhase(p){const e=S.seq[S.i];S.ph=p;S.t0=now();S.talk=null;const n=` · ${S.i+1} / ${S.seq.length}`;
+  if(e.k==='aei'){
+    if(p===0){setCas(e.cas);setLem(e.step?D.names[e.who]+' · '+e.title:S.set.sub);setMain(e.txt);setPh((e.hide?'Retrouve':'Inspire')+n);play('guide',e.i)}
+    else if(p===1){setPh('Garde'+n);if(e.hide)bell()}
+    else{setPh((e.hide?'Dis-la en expirant':'Expire')+n);if(e.o){play(S.set.id,e.o,e.who);S.talk=e.who}}
+  }else{
+    if(p===0){setCas(e.title);setLem('');setMain('');setPh('Inspire'+n);play('guide',e.i)}
+    else if(p===1)setPh('Garde'+n);
+    else{setPh('Expire'+n);setMain(e.txt);play('guide',e.o)}}}
+function word(p){const e=S.seq[S.i],ph=S.ph;let o,sc=1,meta,eo=0,es=1;
+  if(e.k==='aei'){if(!e.hide)o=ph===0?cl(p*2):ph===1?1:1-cl((p-.8)/.2);else o=ph<2?0:cl(p*4)*(1-cl((p-.85)/.15));
+    meta=ph===0?cl(p*3):ph===1?1:1-cl((p-.85)/.15);if(ph===2&&e.step){es=1+.45*ease(p);eo=.2*(1-p)*cl(p*6)}}
+  else{if(ph<2)o=0;else{o=cl(p*3)*cl((1-p)*3);sc=1+.06*p}meta=ph===2?cl((1-p)*3):cl(p*2)}
+  P.main.m.material.opacity=o;P.main.m.scale.setScalar(sc);P.echo.m.material.opacity=eo;P.echo.m.scale.setScalar(es);P.cas.m.material.opacity=meta;P.lem.m.material.opacity=meta*.9;P.ph.m.material.opacity=.7}
+function pause(){if(!S)return;if(!S.paused){S.paused=true;S.pt=now();hush();droneSet(0);setPh('Pause');$('#bPause').setAttribute('txt','t','Reprendre')}
+  else{const d=now()-S.pt;S.t0+=d;S.start+=d;S.paused=false;$('#bPause').setAttribute('txt','t','Pause');setPh('Reprends ton souffle')}}
+function finish(full){hush();droneStop();const s=S;S=null;showHud(false);for(const k in P)P[k].m.material.opacity=0;U.uH.value.set(0,0,0);
+  const min=Math.round((now()-s.start)/60000);
+  $('#end').setAttribute('txt',{t:full?s.set.notions.map(n=>n.s[0]).join('\n'):'Séance arrêtée.',sub:full?`Terminé · ${min} min · ${opt.passes} passages · ${s.set.name}`:'Reviens au souffle normal.'});
+  showMenu(true,true)}
+window.__u=dt=>{if(!stage)return;listen();
+  if(!S){menuAng+=dt*.05;U.uA.value=menuAng;U.uB.value=.5+.5*Math.sin(now()/3000);U.uOn.value+=(.28-U.uOn.value)*Math.min(1,dt*2);U.uP.value=0;return}
+  U.uOn.value+=(1-U.uOn.value)*Math.min(1,dt*.8);if(S.paused||S.ph<0)return;
+  const e=S.seq[S.i],p=Math.min(1,(now()-S.t0)/e.d[S.ph]),b=S.ph===0?ease(p):S.ph===1?1:1-ease(p),k=opt.spin?1:.45;
+  S.f+=((S.ph===0?1:S.ph===1?0:-.75)-S.f)*Math.min(1,dt*5);S.ang+=dt*.38*S.f*k;
+  U.uA.value=S.ang+b*.8*k+(now()-S.start)/1000*.03*k;U.uB.value=b;U.uP.value=S.i/S.seq.length;
+  let amp=0;if(S.talk&&an){an.getByteTimeDomainData(anBuf);let s=0;for(let i=0;i<512;i++){const v=(anBuf[i]-128)/128;s+=v*v}amp=Math.min(1,Math.sqrt(s/512)*7)}
+  lvl+=(amp-lvl)*Math.min(1,dt*12);const c=S.talk?COL[S.talk]:ACC;U.uH.value.set(c[0],c[1],c[2]).multiplyScalar(S.talk?.12+.55*lvl:.05+.13*b);
+  word(p);droneSet(.012+.05*b);
+  if(p>=1){if(S.ph<2)setPhase(S.ph+1);else{S.i++;if(S.i>=S.seq.length)finish(true);else setPhase(0)}}};
+
+/* ---------- menu ---------- */
+const B=(id,w,h,x,y,max,extra)=>`<a-entity id="${id}" geometry="primitive:plane;width:${w};height:${h}" material="shader:flat;transparent:true" position="${x} ${y} 0" txt="t: ;max:${max}${extra||''}"></a-entity>`;
+function refresh(){document.querySelectorAll('[raycaster]').forEach(e=>{const r=e.components.raycaster;r&&r.refreshObjects&&r.refreshObjects()})}
+function vis(el,on,click){el.setAttribute('visible',on);el.classList.toggle('btn',!!(on&&click))}
+function showMenu(on,end){['#title','#info','#safe'].forEach(s=>vis($(s),on&&!end,false));['#s0','#s1','#s2','#s3','#oFull','#oPass','#oSpin','#go'].forEach(s=>vis($(s),on&&!end,true));
+  vis($('#end'),on&&!!end,false);vis($('#again'),on&&!!end,true);vis($('#back'),on&&!!end,true);if(on&&!end)paint();refresh()}
+function showHud(on){vis($('#bPause'),on,true);vis($('#bStop'),on,true);$('#bPause').setAttribute('txt','t','Pause');refresh()}
+function paint(){D.sets.forEach((s,i)=>$('#s'+i).setAttribute('txt',{t:s.name,sub:s.sub,bg:i===opt.set?'#e8c9a0':'#12141f',fg:i===opt.set?'#07080f':'#efe9dc'}));
+  $('#oFull').setAttribute('txt','t','Descente : '+(opt.full?'complète':'courte'));$('#oPass').setAttribute('txt','t','Passages : '+opt.passes);$('#oSpin').setAttribute('txt','t','Spirale : '+(opt.spin?'intense':'douce'));
+  const q=build();$('#info').setAttribute('txt','t',`${q.length} souffles · ${Math.round(total(q)/60000)} min · 1 écoute, ${opt.passes-1} rappel${opt.passes>2?'s':''}`)}
+function init(){stage=$('#stage').object3D;
+  const v=new T.Mesh(new T.SphereGeometry(30,64,48),new T.ShaderMaterial({uniforms:U,vertexShader:VS,fragmentShader:FS,side:T.BackSide,depthWrite:false,toneMapped:false}));v.position.set(0,1.6,0);v.renderOrder=-2;v.frustumCulled=false;stage.add(v);
+  const g=new T.BufferGeometry(),a=[];while(a.length<1500){const d=new T.Vector3().randomDirection();if(-d.z<.25)a.push(d.x*28,d.y*28,d.z*28)}g.setAttribute('position',new T.Float32BufferAttribute(a,3));
+  const st=new T.Points(g,new T.PointsMaterial({color:0xcfc6b4,size:.14,transparent:true,opacity:.6,depthWrite:false}));st.position.set(0,1.6,0);stage.add(st);
+  P={main:plane(1.7,.8,0,900),echo:plane(1.7,.8,0,450),cas:plane(1.7,.17,.52,900),lem:plane(1.7,.16,-.52,900),ph:plane(1.5,.13,-.7,900)};
+  $('#menu').innerHTML=B('title',1.5,.3,0,.6,96,';serif:true;bg:#07080f;ac:#07080f;sub:Une phrase par souffle, dite par sa voix')+
+    [0,1,2,3].map(i=>B('s'+i,.76,.2,i%2?.4:-.4,i<2?.32:.09,62)).join('')+B('oFull',.54,.17,-.56,-.15,40)+B('oPass',.54,.17,0,-.15,40)+B('oSpin',.54,.17,.56,-.15,40)+
+    B('info',1.6,.12,0,-.33,46,';bg:#07080f;ac:#07080f;fg:#cfc8ba')+B('go',.8,.24,0,-.55,84,';serif:true;bg:#e8c9a0;fg:#07080f')+B('safe',1.6,.2,0,-.82,40,';bg:#07080f;ac:#07080f;fg:#a9a8b8')+
+    B('end',1.66,1.0,0,.22,60,';serif:true;bg:#07080f;ac:#07080f')+B('again',.7,.2,-.4,-.5,56,';bg:#e8c9a0;fg:#07080f')+B('back',.7,.2,.4,-.5,56)+
+    B('bPause',.44,.13,-.26,-1.02,44)+B('bStop',.44,.13,.26,-1.02,44);
+  setTimeout(()=>{$('#title').setAttribute('txt','t','Souffle · Gorgias');$('#go').setAttribute('txt','t','Entrer');$('#again').setAttribute('txt','t','Recommencer');$('#back').setAttribute('txt','t','Menu');$('#bStop').setAttribute('txt','t','Arrêter');$('#safe').setAttribute('txt','t','Assis ou allongé. Si la tête tourne : souffle normal, yeux fermés, casque retiré.');
+    [0,1,2,3].forEach(i=>$('#s'+i).addEventListener('click',()=>{opt.set=i;save();paint()}));
+    $('#oFull').addEventListener('click',()=>{opt.full=opt.full?0:1;save();paint()});$('#oPass').addEventListener('click',()=>{opt.passes=opt.passes>=4?2:opt.passes+1;save();paint()});
+    $('#oSpin').addEventListener('click',()=>{opt.spin=opt.spin?0:1;save();paint()});$('#go').addEventListener('click',start);$('#again').addEventListener('click',start);
+    $('#back').addEventListener('click',()=>showMenu(true));$('#bPause').addEventListener('click',pause);$('#bStop').addEventListener('click',()=>S&&finish(false));
+    showHud(false);showMenu(true);
+    document.fonts&&document.fonts.load('600 40px "Cormorant Garamond"').then(()=>document.querySelectorAll('[txt]').forEach(e=>e.components.txt&&e.components.txt.draw())).catch(()=>{})},200);
+  const fov=()=>{if(scene.is('vr-mode'))return;const c=$('#cam'),a=innerWidth/innerHeight;c.setAttribute('camera','fov',Math.max(80,Math.min(106,2*Math.atan(Math.tan(.42)/a)*180/Math.PI)))};fov();addEventListener('resize',fov);
+  scene.addEventListener('enter-vr',()=>{fold();audioInit();setTimeout(align,700)});scene.addEventListener('exit-vr',()=>{align();fov()});
+  if(innerWidth<720)fold();window.__t={opt,start,build,total,get S(){return S},finish,bufs}}
+if(scene.hasLoaded)init();else scene.addEventListener('loaded',init);
+}
+</script>
+</body>
+</html>
