@@ -73,7 +73,7 @@ D.names={soc:'SOCRATE',gor:'GORGIAS',pol:'POLOS',cal:'CALLICLÈS',che:'KHAIRÉPH
 const WHO={soc:{c:'B',sym:'?'},gor:{c:'R',sym:'!'},pol:{c:'R',sym:'!!'},cal:{c:'K',sym:'>'},che:{c:'G',sym:'…'}};
 const cl=x=>x<0?0:x>1?1:x,back=t=>{t=cl(t);const c=1.70158;return 1+(c+1)*Math.pow(t-1,3)+c*Math.pow(t-1,2)};
 D.scenes.forEach(s=>{s.title=s.title.replace('≠',"N'EST PAS")});
-let ss={p:0,k:0,rate:1};try{Object.assign(ss,JSON.parse(localStorage.getItem('gorgias-protocole')||'{}'))}catch(e){}
+let ss={p:0,k:0,rate:1,d:0};try{Object.assign(ss,JSON.parse(localStorage.getItem('gorgias-protocole')||'{}'))}catch(e){}
 const save=()=>{try{localStorage.setItem('gorgias-protocole',JSON.stringify(ss))}catch(e){}};
 const fold=()=>{$('#card').hidden=true;$('#aide').hidden=false};$('#fold').onclick=fold;$('#aide').onclick=()=>{$('#card').hidden=false;$('#aide').hidden=true};
 const VR_URL='https://raw.githack.com/Emje26/Mah-entrainement/gorgias-vr/integral/index.html';
@@ -164,6 +164,13 @@ let pops=[];
 function popKeys(w,t){const side=w==='soc'?gl:gr,f=[];for(const [r,l,c] of KW){if(r.test(t)&&!f.some(x=>x[0]===l))f.push([l,c]);if(f.length>=2)break}
   f.forEach((q,i)=>{const m=mkTile(q[0],.62,.17,q[1]);m.position.set(w==='soc'?-.78:.78,-.05-i*.22,.12);m.scale.setScalar(.001);side.add(m);pops.push({m,t:-i*.25,side,y0:m.position.y})})}
 
+/* ---------- mur des concepts et distance ---------- */
+let far,wall=[],wallOn=-1;
+function wallTile(i,on,now){const s=D.scenes[i],o=wall[i],c=o.userData.c,x=c.getContext('2d');drawTile(c,on?s.title:'?',now?'R':on?'W':'Y',{});o.material[4].map.needsUpdate=true;o.userData.on=on;o.userData.now=now}
+function buildWall(){D.scenes.forEach((s,i)=>{const L=i<20,j=L?i:i-20,col=j%3,row=Math.floor(j/3),g=L?wl:wr;const m=mkTile('?',.7,.34,'Y');m.userData.c=m.material[4].map.image;m.position.set((L?-1:1)*(.4+col*.78),.92-row*.42,0);g.add(m);wall.push(m)})}
+function updWall(si){if(si===wallOn)return;wallOn=si;wall.forEach((m,i)=>{const on=i<=si,now=i===si;if(m.userData.on!==on||m.userData.now!==now)wallTile(i,on,now);m.scale.setScalar(now?1.12:1)})}
+let wl,wr;
+function setDist(d){ss.d=Math.max(0,Math.min(4,d));if(far){far.position.z=-ss.d;far.position.y=ss.d*.28}}
 /* ---------- audio ---------- */
 let ctx=null,audio=null,an=null,anBuf=null,pan=null,mode='menu',cur=-1,amp=0,scn=-1,gl,gr;
 function audioInit(){if(audio)return;audio=new Audio();audio.preload='auto';audio.crossOrigin='anonymous';audio.preservesPitch=true;
@@ -187,18 +194,19 @@ const cue=(j,inst)=>parts.forEach(q=>{if(q.t<0&&q.p.cue<=j){q.t=inst?9:0;q.m.vis
 function head(p){const s=D.scenes[scn];setTitle(`${p+1}/${NP} · ${s?s.tag:'PROLOGUE'}`,s?s.title:'LE GORGIAS INTÉGRAL',scn%2?'K':'R')}
 function step(){const P=D.parts[ss.p],k=findK(P.ch,audio.currentTime);if(k===cur)return;const jump=Math.abs(k-cur)>1;cur=k;ss.k=k;if(k%4===0)save();const c=P.ch[k];
   if(c.w==='nar'){setOpp(P.opp);setSub(null,c.t)}else{if(c.w!=='soc')setOpp(c.w);else setOpp(D.parts[ss.p].opp);setSub(c.w,c.t);placePan(c.w);if(!jump)popKeys(c.w,c.t)}
-  const si=sceneAt(ss.p,k);if(si!==scn){scn=si;build(D.scenes[si]);head(ss.p);if(si>=0){const o=off(D.scenes[si],ss.p,k);cue(o,jump&&o>0)}}else if(si>=0)cue(off(D.scenes[si],ss.p,k),jump)}
+  const si=sceneAt(ss.p,k);updWall(si);if(si!==scn){scn=si;build(D.scenes[si]);head(ss.p);if(si>=0){const o=off(D.scenes[si],ss.p,k);cue(o,jump&&o>0)}}else if(si>=0)cue(off(D.scenes[si],ss.p,k),jump)}
 function vis(el,on){el.setAttribute('visible',on);el.classList.toggle('btn',!!on)}
 function refresh(){document.querySelectorAll('[raycaster]').forEach(e=>{const r=e.components.raycaster;r&&r.refreshObjects&&r.refreshObjects()})}
-const CTRL=['#bPrev','#bPlay','#bNext','#bRate','#bMenu'];
-function showMenu(){if(audio)audio.pause();save();mode=mode==='end'?'end':'menu';cover.m.visible=true;[TT.m,SB.m,FR].forEach(o=>o.visible=false);[HL,NL,WL,NR,WR].forEach(o=>o.visible=false);for(const k in HR)HR[k].visible=false;wipe(obj);parts=[];scn=-2;
+const CTRL=['#bBack','#bPrev','#bPlay','#bNext','#bRate','#bMenu','#bFwd'];
+function showMenu(){if(audio)audio.pause();save();mode=mode==='end'?'end':'menu';cover.m.visible=true;wl.visible=wr.visible=false;[TT.m,SB.m,FR].forEach(o=>o.visible=false);[HL,NL,WL,NR,WR].forEach(o=>o.visible=false);for(const k in HR)HR[k].visible=false;wipe(obj);parts=[];scn=-2;
   vis($('#go'),true);$('#go').setAttribute('tl','t',ss.p||ss.k?`REPRENDRE · PARTIE ${ss.p+1}`:'LANCER LE PROTOCOLE');for(let i=0;i<NP;i++)vis($('#n'+i),true);CTRL.forEach(s=>vis($(s),false));refresh()}
-function showPlay(){mode='play';cover.m.visible=false;[TT.m,SB.m,FR,HL,NL,WL,NR,WR].forEach(o=>o.visible=true);vis($('#go'),false);for(let i=0;i<NP;i++)vis($('#n'+i),false);CTRL.forEach(s=>vis($(s),true));
+function showPlay(){mode='play';cover.m.visible=false;wl.visible=wr.visible=true;[TT.m,SB.m,FR,HL,NL,WL,NR,WR].forEach(o=>o.visible=true);vis($('#go'),false);for(let i=0;i<NP;i++)vis($('#n'+i),false);CTRL.forEach(s=>vis($(s),true));
   $('#bPlay').setAttribute('tl','t','PAUSE');$('#bRate').setAttribute('tl','t',`VITESSE ${String(ss.rate).replace('.',',')}×`);refresh()}
 function align(){if(!scene.is('vr-mode')){stage.position.set(0,0,0);stage.rotation.set(0,0,0);return}const cam=$('#cam').object3D;cam.getWorldPosition(tv);cam.getWorldQuaternion(tq);tf.set(0,0,-1).applyQuaternion(tq);stage.position.set(tv.x,tv.y-1.6,tv.z);stage.rotation.set(0,Math.atan2(-tf.x,-tf.z),0)}
 function begin(p,k){audioInit();ctx&&ctx.resume&&ctx.resume();fold();align();showPlay();setOpp(D.parts[p].opp);openPart(p,k,true)}
 
-window.__u=(dt,t)=>{if(!stage)return;listen();let who=null;
+let stickY=0;
+window.__u=(dt,t)=>{if(!stage)return;listen();let who=null;if(stickY&&mode==='play'){setDist(ss.d+stickY*dt*1.5)}
   if(audio&&mode==='play'&&audio.readyState>0){step();const c=D.parts[ss.p].ch[cur];if(c&&!audio.paused&&audio.currentTime<c.s+c.d+.05)who=c.w}
   let a=0;if(who&&an){an.getByteTimeDomainData(anBuf);let s=0;for(let i=0;i<512;i++){const v=(anBuf[i]-128)/128;s+=v*v}a=Math.min(1,Math.sqrt(s/512)*7)}else if(who)a=.4;amp+=(a-amp)*Math.min(1,dt*14);
   const L=who==='soc',R=who&&who!=='soc'&&who!=='nar';if(WL){WL.scale.setScalar(L?.55+amp*.75:.001);WR.scale.set(R?-(.55+amp*.75):-.001,R?.55+amp*.75:.001,1);HL.scale.setScalar(1+(L?amp*.08:0));for(const k in HR)HR[k].scale.setScalar(1+(R?amp*.08:0))}
@@ -217,17 +225,24 @@ function init(){stage=$('#stage').object3D;
   HL=mkPic('head',.8,.8,{c:'B',sym:'?'});NL=mkTile('SOCRATE',.72,.18,'B');NL.position.y=-.54;WL=mkPic('waves',.3,.5,{c:'B'});WL.position.set(.56,-.06,.02);gl.add(HL,NL,WL);
   ['gor','pol','cal','che'].forEach(k=>{HR[k]=mkPic('head',.8,.8,{c:WHO[k].c,sym:WHO[k].sym,flip:1});HR[k].visible=false;gr.add(HR[k])});
   NR=mkTile('GORGIAS',.72,.18,'R');NR.userData.c=NR.material[4].map.image;NR.position.y=-.54;WR=mkPic('waves',.3,.5,{c:'R'});WR.position.set(-.56,-.06,.02);WR.scale.x=-1;gr.add(NR,WR);
+  const bg=new T.Mesh(new T.PlaneGeometry(2.94,1.52),flat('#FBF8F0'));bg.position.set(0,.04,-.02);FR.add(bg);
+  far=new T.Group();stage.add(far);[obj,FR,TT.m,gl,gr].forEach(o=>far.add(o));
+  wl=new T.Group();wl.position.set(-1.9,1.72,-3.4);wl.rotation.y=.45;wr=new T.Group();wr.position.set(1.9,1.72,-3.4);wr.rotation.y=-.45;far.add(wl,wr);buildWall();setDist(ss.d);
+  const wt=(t,x)=>{const m=mkTile(t,2.3,.2,'K');m.position.set(x*1.17,1.36,-.02);return m};wl.add(wt('GORGIAS ET POLOS',-1));wr.add(wt('CALLICLÈS ET LE MYTHE',1));
   $('#stage').innerHTML=E('go',1.7,.3,0,.98,-2.9,'R','LANCER LE PROTOCOLE')+D.parts.map((P,i)=>E('n'+i,.38,.2,(-1.26+.42*(i%7)+(i>6?.21:0)).toFixed(2),(.62-.25*Math.floor(i/7)).toFixed(2),-2.9,'W',`PARTIE ${i+1}`)).join('')+
-    E('bPrev',.5,.17,-1.08,.33,-2.7,'K','PRÉCÉDENTE')+E('bPlay',.5,.17,-.54,.33,-2.7,'K','PAUSE')+E('bNext',.5,.17,0,.33,-2.7,'K','SUIVANTE')+E('bRate',.5,.17,.54,.33,-2.7,'K','VITESSE 1×')+E('bMenu',.5,.17,1.08,.33,-2.7,'R','PARTIES');
+    E('bBack',.4,.17,-1.38,.33,-2.7,'B','RECULER')+E('bPrev',.4,.17,-.92,.33,-2.7,'K','PRÉCÉDENTE')+E('bPlay',.4,.17,-.46,.33,-2.7,'K','PAUSE')+E('bNext',.4,.17,0,.33,-2.7,'K','SUIVANTE')+E('bRate',.4,.17,.46,.33,-2.7,'K','VITESSE 1×')+E('bMenu',.4,.17,.92,.33,-2.7,'R','PARTIES')+E('bFwd',.4,.17,1.38,.33,-2.7,'B','AVANCER');
   setTimeout(()=>{$('#go').addEventListener('click',()=>begin(ss.p,ss.k));for(let i=0;i<NP;i++)$('#n'+i).addEventListener('click',()=>begin(i,0));
     $('#bPlay').addEventListener('click',()=>{if(audio.paused){audio.play().catch(()=>{});$('#bPlay').setAttribute('tl','t','PAUSE')}else{audio.pause();save();$('#bPlay').setAttribute('tl','t','LECTURE')}});
     $('#bPrev').addEventListener('click',()=>seek(cur-1));$('#bNext').addEventListener('click',()=>seek(cur+1));
     $('#bRate').addEventListener('click',()=>{ss.rate=ss.rate>=1.5?1:Math.round((ss.rate+.25)*100)/100;audio.playbackRate=ss.rate;save();$('#bRate').setAttribute('tl','t',`VITESSE ${String(ss.rate).replace('.',',')}×`)});
     $('#bMenu').addEventListener('click',showMenu);showMenu();
+    $('#bBack').addEventListener('click',()=>{setDist(ss.d+.5);save()});$('#bFwd').addEventListener('click',()=>{setDist(ss.d-.5);save()});
+    document.querySelectorAll('[laser-controls]').forEach(e=>e.addEventListener('thumbstickmoved',ev=>{const y=ev.detail&&ev.detail.y||0;if(Math.abs(y)>.3){stickY=y}else stickY=0}));
+    addEventListener('wheel',ev=>{if(mode==='play'){setDist(ss.d+ev.deltaY*.002);save()}},{passive:true});
     document.fonts&&Promise.all(['92px Anton','700 40px Inter','32px "Space Mono"'].map(f=>document.fonts.load(f))).then(()=>{drawCover();drawTile(NL.material[4].map.image,'SOCRATE','B');NL.material[4].map.needsUpdate=true;document.querySelectorAll('[tl]').forEach(e=>e.components.tl&&e.components.tl.update())}).catch(()=>{})},250);
   const fov=()=>{if(scene.is('vr-mode'))return;const a=innerWidth/innerHeight,p=a<1;$('#cam').setAttribute('camera','fov',p?96:Math.max(62,Math.min(80,2*Math.atan(Math.tan(.66)/a)*180/Math.PI)));$('#rig').object3D.position.z=p?1.7:(a<1.5?.9:0)};fov();addEventListener('resize',fov);
   scene.addEventListener('enter-vr',()=>{fold();$('#rig').object3D.position.z=0;setTimeout(align,700)});scene.addEventListener('exit-vr',()=>{align();fov()});
-  addEventListener('pagehide',save);if(innerWidth<720)fold();window.__t={begin,seek,showMenu,get st(){return{st:ss,cur,scn,mode,t:audio&&audio.currentTime,parts:parts.length,pops:pops.length}}}}
+  addEventListener('pagehide',save);if(innerWidth<720)fold();window.__t={begin,seek,showMenu,setDist,get st(){return{st:ss,cur,scn,mode,t:audio&&audio.currentTime,parts:parts.length,pops:pops.length}}}}
 if(scene.hasLoaded)init();else scene.addEventListener('loaded',init);
 }
 </script>
