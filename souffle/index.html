@@ -51,6 +51,7 @@ AFRAME.registerComponent('loop',{tick(t,dt){window.__u&&window.__u(Math.min(dt,1
   <h1>Souffle VR · Gorgias</h1>
   <p>La spirale suit ta respiration. Une phrase du Gorgias par souffle, dite par celui qui la soutient : <b>Socrate</b>, <b>Gorgias</b>, <b>Polos</b>, <b>Calliclès</b>. D'abord tu écoutes. Ensuite tu retrouves chaque phrase avant de l'entendre, puis tu la dis en expirant.</p>
   <p id="vr" class="m"></p>
+  <p class="m">Allongé ou assis : maintiens le bouton de saisie (sur le côté de la manette, sous le majeur) pour attraper toute la scène et la placer où tu veux, même au-dessus de toi. B ou Y la remet droite devant toi.</p>
   <p class="m">Assis ou allongé, casque audio conseillé. Si la tête tourne ou si tu as la nausée : respire normalement, ferme les yeux, retire le casque. Aucun flash.</p>
   <p class="m">Le souffle lent calme et stabilise l'attention. Ce qui ancre, c'est retrouver la phrase de mémoire et la dire.</p>
   <details><summary>La fiche complète</summary><div id="fiche"></div></details>
@@ -81,7 +82,7 @@ const esc=s=>String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 $('#fold').onclick=()=>{const c=$('#card');c.classList.toggle('min');$('#fold').textContent=c.classList.contains('min')?'Aide':'Replier'};
 const fold=()=>{$('#card').classList.add('min');$('#fold').textContent='Aide'};
 $('#fiche').innerHTML=D.sets.map(s=>`<p><b>${esc(s.name)} · ${esc(s.sub)}</b></p>`+s.notions.map(n=>`<p><b>${esc(D.names[n.who])} · ${esc(n.title)}</b><br>A · ${esc(n.s[0])}<br>E · ${esc(n.s[1])}<br>I · ${esc(n.s[2])}</p>`).join('')).join('');
-const VR_URL='';
+const VR_URL='https://raw.githack.com/Emje26/Mah-entrainement/gorgias-vr/souffle/index.html';
 const vrMsg=ok=>{$('#vr').innerHTML=ok?'Immersion disponible : touche le bouton VR en bas à droite, puis vise avec la manette et appuie sur la gâchette.':'Ici, la séance tourne en fenêtre. '+(VR_URL?`Pour l'immersion dans le casque, ouvre <a href="${VR_URL}">${VR_URL.replace('https://','')}</a> dans le navigateur du Quest.`:'L\'immersion demande le casque et le lien direct du jeu.')};
 if(navigator.xr&&navigator.xr.isSessionSupported)navigator.xr.isSessionSupported('immersive-vr').then(vrMsg).catch(()=>vrMsg(false));else vrMsg(false);
 
@@ -223,7 +224,11 @@ function init(){stage=$('#stage').object3D;
     document.fonts&&document.fonts.load('600 40px "Cormorant Garamond"').then(()=>document.querySelectorAll('[txt]').forEach(e=>e.components.txt&&e.components.txt.draw())).catch(()=>{})},200);
   const fov=()=>{if(scene.is('vr-mode'))return;const c=$('#cam'),a=innerWidth/innerHeight;c.setAttribute('camera','fov',Math.max(80,Math.min(106,2*Math.atan(Math.tan(.42)/a)*180/Math.PI)))};fov();addEventListener('resize',fov);
   scene.addEventListener('enter-vr',()=>{fold();audioInit();setTimeout(align,700)});scene.addEventListener('exit-vr',()=>{align();fov()});
-  if(innerWidth<720)fold();window.__t={opt,start,build,total,get S(){return S},finish,bufs}}
+  if(innerWidth<720)fold();{const H=[...document.querySelectorAll('[laser-controls]')],m0=new THREE.Matrix4(),s0=new THREE.Matrix4(),mt=new THREE.Matrix4(),sc=new THREE.Vector3();let gh=null;
+H.forEach(h=>{h.addEventListener('gripdown',()=>{gh=h;h.object3D.updateMatrixWorld(true);stage.updateMatrixWorld(true);m0.copy(h.object3D.matrixWorld).invert();s0.copy(stage.matrixWorld)});
+h.addEventListener('gripup',()=>{if(gh===h)gh=null});['bbuttondown','ybuttondown'].forEach(ev=>h.addEventListener(ev,()=>{gh=null;align()}))});
+AFRAME.registerComponent('grabworld',{tick(){if(!gh)return;gh.object3D.updateMatrixWorld(true);mt.copy(gh.object3D.matrixWorld).multiply(m0).multiply(s0);mt.decompose(stage.position,stage.quaternion,sc)}});scene.setAttribute('grabworld','')}
+window.__t={opt,start,build,total,get S(){return S},finish,bufs}}
 if(scene.hasLoaded)init();else scene.addEventListener('loaded',init);
 }
 </script>

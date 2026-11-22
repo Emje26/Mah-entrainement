@@ -46,6 +46,7 @@ AFRAME.registerComponent('loop',{tick(t,dt){window.__u&&window.__u(Math.min(dt,1
   <h1>Cartes muettes VR</h1>
   <p>Afrique, Asie, Océanie et États d'Australie. Un nom s'affiche : vise le pays au laser et appuie sur la gâchette. Les petits pays ont un rond pour être visables.</p>
   <p id="vr" class="m"></p>
+  <p class="m">Allongé ou assis : maintiens le bouton de saisie (sur le côté de la manette, sous le majeur) pour attraper toute la scène et la placer où tu veux, même au-dessus de toi. B ou Y la remet droite devant toi.</p>
   <p class="m">Zoom : boutons + et −, molette sur ordinateur, joystick vers l'avant ou l'arrière dans le casque. Déplacer la carte : glisser à la souris, joystick sur les côtés, ou bouton Recentrer.</p>
   <button class="u" id="fold">Replier</button>
 </div>
@@ -204,7 +205,11 @@ function init(){stage=$('#stage').object3D;const R=scene.renderer;R.localClippin
     show('menu');document.fonts&&document.fonts.load(`800 40px Outfit`).then(()=>{document.querySelectorAll('[tl]').forEach(e=>e.components.tl.update())}).catch(()=>{})},250);
   const fov=()=>{if(scene.is('vr-mode'))return;const a=innerWidth/innerHeight;$('#cam').setAttribute('camera','fov',a<1?100:Math.max(60,Math.min(80,2*Math.atan(Math.tan(.64)/a)*180/Math.PI)));$('#rig').object3D.position.z=a<1?1.6:(a<1.5?.7:0)};fov();addEventListener('resize',fov);
   scene.addEventListener('enter-vr',()=>{fold();audio();$('#rig').object3D.position.z=0;setTimeout(align,700)});scene.addEventListener('exit-vr',()=>{align();fov()});
-  if(innerWidth<720)fold();window.__t={start,pick,opt,get st(){return{mode,cur,G,Z,hover}},zoomAt,setZoom,show}}
+  if(innerWidth<720)fold();{const H=[...document.querySelectorAll('[laser-controls]')],m0=new THREE.Matrix4(),s0=new THREE.Matrix4(),mt=new THREE.Matrix4(),sc=new THREE.Vector3();let gh=null;
+H.forEach(h=>{h.addEventListener('gripdown',()=>{gh=h;h.object3D.updateMatrixWorld(true);stage.updateMatrixWorld(true);m0.copy(h.object3D.matrixWorld).invert();s0.copy(stage.matrixWorld)});
+h.addEventListener('gripup',()=>{if(gh===h)gh=null});['bbuttondown','ybuttondown'].forEach(ev=>h.addEventListener(ev,()=>{gh=null;align()}))});
+AFRAME.registerComponent('grabworld',{tick(){if(!gh)return;gh.object3D.updateMatrixWorld(true);mt.copy(gh.object3D.matrixWorld).multiply(m0).multiply(s0);mt.decompose(stage.position,stage.quaternion,sc)}});scene.setAttribute('grabworld','')}
+window.__t={start,pick,opt,get st(){return{mode,cur,G,Z,hover}},zoomAt,setZoom,show}}
 if(scene.hasLoaded)init();else scene.addEventListener('loaded',init);
 }
 </script>

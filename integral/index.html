@@ -52,6 +52,7 @@ AFRAME.registerComponent('loop',{tick(t,dt){window.__u&&window.__u(Math.min(dt,1
   <p class="mono">Gorgias intégral : 3 h de dialogue, 39 tableaux animés</p>
   <p>Le texte complet de Platon (traduction d'Émile Chambry), joué par Socrate, Gorgias, Polos, Calliclès et Khairéphon. À chaque réplique, les mots-clés jaillissent de celui qui parle ; aux moments décisifs, le concept se monte en tableau devant toi.</p>
   <p id="vr"></p>
+  <p class="m">Allongé ou assis : maintiens le bouton de saisie (sur le côté de la manette, sous le majeur) pour attraper toute la scène et la placer où tu veux, même au-dessus de toi. B ou Y la remet droite devant toi.</p>
   <p class="keep">La lecture reprend là où tu t'es arrêté.</p>
   <button id="fold">Replier</button>
 </div>
@@ -242,7 +243,11 @@ function init(){stage=$('#stage').object3D;
     document.fonts&&Promise.all(['92px Anton','700 40px Inter','32px "Space Mono"'].map(f=>document.fonts.load(f))).then(()=>{drawCover();drawTile(NL.material[4].map.image,'SOCRATE','B');NL.material[4].map.needsUpdate=true;document.querySelectorAll('[tl]').forEach(e=>e.components.tl&&e.components.tl.update())}).catch(()=>{})},250);
   const fov=()=>{if(scene.is('vr-mode'))return;const a=innerWidth/innerHeight,p=a<1;$('#cam').setAttribute('camera','fov',p?96:Math.max(62,Math.min(80,2*Math.atan(Math.tan(.66)/a)*180/Math.PI)));$('#rig').object3D.position.z=p?1.7:(a<1.5?.9:0)};fov();addEventListener('resize',fov);
   scene.addEventListener('enter-vr',()=>{fold();$('#rig').object3D.position.z=0;setTimeout(align,700)});scene.addEventListener('exit-vr',()=>{align();fov()});
-  addEventListener('pagehide',save);if(innerWidth<720)fold();window.__t={begin,seek,showMenu,setDist,get st(){return{st:ss,cur,scn,mode,t:audio&&audio.currentTime,parts:parts.length,pops:pops.length}}}}
+  addEventListener('pagehide',save);if(innerWidth<720)fold();{const H=[...document.querySelectorAll('[laser-controls]')],m0=new THREE.Matrix4(),s0=new THREE.Matrix4(),mt=new THREE.Matrix4(),sc=new THREE.Vector3();let gh=null;
+H.forEach(h=>{h.addEventListener('gripdown',()=>{gh=h;h.object3D.updateMatrixWorld(true);stage.updateMatrixWorld(true);m0.copy(h.object3D.matrixWorld).invert();s0.copy(stage.matrixWorld)});
+h.addEventListener('gripup',()=>{if(gh===h)gh=null});['bbuttondown','ybuttondown'].forEach(ev=>h.addEventListener(ev,()=>{gh=null;align()}))});
+AFRAME.registerComponent('grabworld',{tick(){if(!gh)return;gh.object3D.updateMatrixWorld(true);mt.copy(gh.object3D.matrixWorld).multiply(m0).multiply(s0);mt.decompose(stage.position,stage.quaternion,sc)}});scene.setAttribute('grabworld','')}
+window.__t={begin,seek,showMenu,setDist,get st(){return{st:ss,cur,scn,mode,t:audio&&audio.currentTime,parts:parts.length,pops:pops.length}}}}
 if(scene.hasLoaded)init();else scene.addEventListener('loaded',init);
 }
 </script>
