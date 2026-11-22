@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cartes muettes VR</title>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+/* VOICE: jeu de géographie nerveux et clair, récompense immédiate
+   IDEA: une salle des cartes, l'atlas géant devant toi, les pays en relief qu'on vise au laser
+   PICTURE: la carte en relief, mer bleu pâle, terres crème, pays trouvés en vert
+   COLOUR and TYPE: mer #cbdde6, terre #f2e8d3, encre #1f2a33, vert, rouge, orange ; Outfit
+   LAYOUT: scène plein écran, carte d'aide repliable */
+:root{color-scheme:light;--sea:#cbdde6;--ink:#1f2a33;--soft:#5d6b75;--good:#3f9a62}
+*{box-sizing:border-box;min-width:0}
+html,body{margin:0;height:100%;background:#dfe8ec;color:var(--ink);font:16px/1.45 Outfit,system-ui,sans-serif;overflow:hidden}
+[hidden]{display:none!important}
+#card{position:fixed;z-index:10;top:12px;left:12px;width:min(390px,calc(100vw - 24px));max-height:calc(100vh - 24px);overflow:auto;background:#fffffff2;border:2px solid var(--ink);border-radius:14px;padding:14px 16px}
+#card h1{font:800 28px/1.05 Outfit,sans-serif;margin:0 0 8px}
+#card p{margin:0 0 8px;font-size:15px}.m{color:var(--soft);font-size:14px}
+#card a{color:var(--ink)}
+button.u{font:800 16px Outfit,sans-serif;min-height:44px;padding:0 18px;border-radius:999px;border:0;background:var(--ink);color:#fff;cursor:pointer}
+button.u:focus-visible{outline:3px solid #f0a21a;outline-offset:2px}
+#aide{position:fixed;z-index:10;top:10px;left:10px}
+</style>
+<script src="https://cdn.jsdelivr.net/npm/aframe@1.7.1/dist/aframe-master.min.js"></script>
+<script src="maps.js"></script>
+<script>
+const C={sea:'#cbdde6',land:'#f2e8d3',edge:'#8a7a5c',ctx:'#dfe4e2',ink:'#1f2a33',soft:'#5d6b75',good:'#3f9a62',bad:'#d9482f',hint:'#f0a21a',hover:'#f7d27c',paper:'#ffffff'};
+const FF='Outfit,system-ui,sans-serif';
+function wrapL(x,s,W){const o=[];for(const p of String(s).split('\n')){let l='';for(const k of p.split(' ')){const t=l?l+' '+k:k;if(x.measureText(t).width>W&&l){o.push(l);l=k}else l=t}o.push(l)}return o}
+function fitT(x,s,W,H,w,max,lh){let z=max,L;for(;;){x.font=`${w} ${z}px ${FF}`;L=wrapL(x,s,W);if((L.length*z*lh<=H&&L.every(l=>x.measureText(l).width<=W))||z<12)break;z*=.93}return[z,L]}
+function putT(x,L,z,lh,cx,cy){x.textAlign='center';x.textBaseline='middle';const y0=cy-(L.length-1)*z*lh/2;L.forEach((l,i)=>x.fillText(l,cx,y0+i*z*lh))}
+function pill(x,W,H,bg,bd){const r=Math.min(Math.min(W,H)*.45,70);x.clearRect(0,0,W,H);x.beginPath();x.roundRect?x.roundRect(3,3,W-6,H-6,r):x.rect(3,3,W-6,H-6);x.fillStyle=bg;x.fill();if(bd){x.lineWidth=5;x.strokeStyle=bd;x.stroke()}}
+AFRAME.registerComponent('tl',{dependencies:['geometry','material'],schema:{t:{default:''},on:{default:false},sub:{default:''}},
+  init(){const g=this.el.getAttribute('geometry');this.c=document.createElement('canvas');this.c.width=Math.round(g.width*520);this.c.height=Math.round(g.height*520);this.tex=new THREE.CanvasTexture(this.c);this.tex.colorSpace=THREE.SRGBColorSpace;this.tex.anisotropy=8},
+  update(){const x=this.c.getContext('2d'),W=this.c.width,H=this.c.height,on=this.data.on,hv=this.el.dataset.hv==='1';pill(x,W,H,on?C.ink:hv?'#fff3d1':C.paper,C.ink);x.fillStyle=on?'#fff':C.ink;
+    if(this.data.sub){let r=fitT(x,this.data.t,W*.86,H*.42,800,H*.36,1.05);x.font=`800 ${r[0]}px ${FF}`;putT(x,r[1],r[0],1.05,W/2,H*.36);x.fillStyle=on?'#cfd8dd':C.soft;r=fitT(x,this.data.sub,W*.86,H*.3,500,H*.2,1.1);x.font=`500 ${r[0]}px ${FF}`;putT(x,r[1],r[0],1.1,W/2,H*.72)}
+    else{const r=fitT(x,this.data.t,W*.84,H*.6,800,H*.46,1.05);x.font=`800 ${r[0]}px ${FF}`;putT(x,r[1],r[0],1.05,W/2,H/2+r[0]*.04)}this.tex.needsUpdate=true},
+  tick(){const m=this.el.getObject3D('mesh');if(m&&m.material&&m.material.map!==this.tex){m.material.map=this.tex;m.material.transparent=true;m.material.needsUpdate=true}}});
+AFRAME.registerComponent('loop',{tick(t,dt){window.__u&&window.__u(Math.min(dt,100)/1000,t/1000)}});
+</script>
+</head>
+<body>
+<div id="card">
+  <h1>Cartes muettes VR</h1>
+  <p>Afrique, Asie, Océanie et États d'Australie. Un nom s'affiche : vise le pays au laser et appuie sur la gâchette. Les petits pays ont un rond pour être visables.</p>
+  <p id="vr" class="m"></p>
+  <p class="m">Zoom : boutons + et −, molette sur ordinateur, joystick vers l'avant ou l'arrière dans le casque. Déplacer la carte : glisser à la souris, joystick sur les côtés, ou bouton Recentrer.</p>
+  <button class="u" id="fold">Replier</button>
+</div>
+<button class="u" id="aide" hidden>Aide</button>
+
+<a-scene loop background="color:#dfe8ec" renderer="antialias:true;colorManagement:true" cursor="rayOrigin:mouse" raycaster="objects:.btn" vr-mode-ui="enabled:true" loading-screen="dotsColor:#1f2a33;backgroundColor:#dfe8ec">
+  <a-entity id="stage"></a-entity>
+  <a-entity id="rig">
+    <a-entity id="cam" camera look-controls position="0 1.6 0"></a-entity>
+    <a-entity id="hR" laser-controls="hand:right;model:false" raycaster="objects:.btn;far:20;lineColor:#1f2a33;lineOpacity:0.7"></a-entity>
+    <a-entity id="hL" laser-controls="hand:left;model:false" raycaster="objects:.btn;far:20;lineColor:#1f2a33;lineOpacity:0.7"></a-entity>
+  </a-entity>
+</a-scene>
+
+<script>
+{
+const $=s=>document.querySelector(s),scene=$('a-scene'),T=THREE,M=window.MAPS;
+const MODES=[['exam','Contrôle','Un essai par pays, note sur 20'],['train','Entraînement','Tu retentes jusqu\'à trouver'],['death','Mort subite','Une faute et c\'est fini'],['learn','Découverte','Touche pour voir le nom']];
+let opt={map:0,mode:'exam',zone:'all'};try{Object.assign(opt,JSON.parse(localStorage.getItem('cartes-vr')||'{}'))}catch(e){}
+const save=()=>{try{localStorage.setItem('cartes-vr',JSON.stringify(opt))}catch(e){}};
+const rec=k=>{try{return+localStorage.getItem('cartes-vr-rec-'+k)||0}catch(e){return 0}},setRec=(k,v)=>{try{localStorage.setItem('cartes-vr-rec-'+k,v)}catch(e){}};
+const fold=()=>{$('#card').hidden=true;$('#aide').hidden=false};$('#fold').onclick=fold;$('#aide').onclick=()=>{$('#card').hidden=false;$('#aide').hidden=true};
+const VR_URL='https://raw.githack.com/Emje26/Mah-entrainement/gorgias-vr/cartes/index.html';
+const vrMsg=ok=>{$('#vr').innerHTML=ok?'Immersion disponible : touche le bouton VR en bas à droite.':'Ici, le jeu tourne en fenêtre. '+(VR_URL?`Pour l'immersion, ouvre <a href="${VR_URL}">ce lien</a> dans le navigateur du Quest.`:'')};
+if(navigator.xr&&navigator.xr.isSessionSupported)navigator.xr.isSessionSupported('immersive-vr').then(vrMsg).catch(()=>vrMsg(false));else vrMsg(false);
+
+/* ---------- son et vibrations ---------- */
+let ac=null;function audio(){if(!ac)try{ac=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}ac&&ac.resume&&ac.resume()}
+function tone(f,d,type='sine',v=.15,f2){if(!ac)return;const t=ac.currentTime,o=ac.createOscillator(),g=ac.createGain();o.type=type;o.frequency.setValueAtTime(f,t);if(f2)o.frequency.exponentialRampToValueAtTime(f2,t+d);g.gain.setValueAtTime(v,t);g.gain.exponentialRampToValueAtTime(.001,t+d);o.connect(g).connect(ac.destination);o.start(t);o.stop(t+d+.02)}
+function buzz(i,d){document.querySelectorAll('[laser-controls]').forEach(e=>{try{const tc=e.components['tracked-controls'],g=tc&&tc.controller&&tc.controller.gamepad,h=g&&g.hapticActuators&&g.hapticActuators[0];h&&h.pulse&&h.pulse(i,d)}catch(x){}})}
+
+/* ---------- panneaux ---------- */
+let stage;
+function panel(w,h,x,y,z){const c=document.createElement('canvas');c.width=Math.round(w*520);c.height=Math.round(h*520);const t=new T.CanvasTexture(c);t.colorSpace=T.SRGBColorSpace;t.anisotropy=8;
+  const m=new T.Mesh(new T.PlaneGeometry(w,h),new T.MeshBasicMaterial({map:t,transparent:true,depthWrite:false}));m.position.set(x,y,z);m.renderOrder=5;stage.add(m);return{c,x:c.getContext('2d'),W:c.width,H:c.height,m,t}}
+let HUD,TOAST,BIG,toastT=0;
+function hud(ask,name,stats){const x=HUD.x,W=HUD.W,H=HUD.H;pill(x,W,H,'#ffffff',C.ink);x.fillStyle=C.soft;x.font=`500 ${H*.2}px ${FF}`;x.textAlign='left';x.textBaseline='middle';x.fillText(ask,W*.05,H*.27);
+  x.fillStyle=C.ink;const r=fitT(x,name,W*.62,H*.5,800,H*.42,1.02);x.font=`800 ${r[0]}px ${FF}`;x.textAlign='left';const y0=H*.64-(r[1].length-1)*r[0]*.51;r[1].forEach((l,i)=>x.fillText(l,W*.05,y0+i*r[0]*1.02));
+  x.textAlign='right';x.fillStyle=C.soft;x.font=`500 ${H*.17}px ${FF}`;stats.forEach((s,i)=>x.fillText(s,W*.95,H*(.28+i*.22)));HUD.t.needsUpdate=true}
+function toast(t,col){const x=TOAST.x,W=TOAST.W,H=TOAST.H;pill(x,W,H,'#ffffff',col||C.ink);x.fillStyle=col||C.ink;const r=fitT(x,t,W*.9,H*.7,800,H*.5,1.05);x.font=`800 ${r[0]}px ${FF}`;putT(x,r[1],r[0],1.05,W/2,H/2);TOAST.t.needsUpdate=true;TOAST.m.visible=true;toastT=1.8}
+
+/* ---------- carte ---------- */
+const COL={};for(const k of ['land','good','bad','hint','hover','ctx'])COL[k]=new T.Color(C[k]);
+let mapG,mapIn,meshes=[],cs=[],lbls=[],hover=null,Z=1,cur=null;
+const W0=3.9,H0=2.15;
+function buildMap(i){const m=M[i];if(mapG)stage.remove(mapG);meshes=[];cs=[];lbls=[];
+  mapG=new T.Group();mapG.position.set(0,1.45,-2.9);mapG.rotation.x=-.16;stage.add(mapG);
+  const frame=new T.Mesh(new T.BoxGeometry(W0+.12,H0+.12,.06),new T.MeshStandardMaterial({color:0x6e5a3e,roughness:.7}));frame.position.z=-.05;mapG.add(frame);
+  const sea=new T.Mesh(new T.PlaneGeometry(W0,H0),new T.MeshBasicMaterial({color:'#a9c6d6'}));sea.position.z=-.015;mapG.add(sea);
+  const base=[new T.Plane(new T.Vector3(1,0,0),W0/2),new T.Plane(new T.Vector3(-1,0,0),W0/2),new T.Plane(new T.Vector3(0,1,0),H0/2),new T.Plane(new T.Vector3(0,-1,0),H0/2)],clip=base.map(q=>q.clone());mapG.userData.base=base;mapG.userData.clip=clip;
+  mapIn=new T.Group();mapG.add(mapIn);
+  const bw=m.bb[2]-m.bb[0],bh=m.bb[3]-m.bb[1],s=Math.min(W0/bw,H0/bh)*.97,ox=-(m.bb[0]+m.bb[2])/2,oy=-(m.bb[1]+m.bb[3])/2;mapIn.userData={s,ox,oy};
+  const P=(p)=>new T.Vector2((p[0]+ox)*s,(p[1]+oy)*s);
+  const ctxShapes=m.ctx.map(r=>new T.Shape(r.map(P)));const cm=new T.Mesh(new T.ShapeGeometry(ctxShapes),new T.MeshStandardMaterial({color:C.ctx,roughness:.9,clippingPlanes:clip}));cm.position.z=-.008;mapIn.add(cm);
+  const edge=[];
+  m.c.forEach((c,ci)=>{const shapes=c.p.map(rs=>{const sh=new T.Shape(rs[0].map(P));rs.slice(1).forEach(h=>sh.holes.push(new T.Path(h.map(P))));return sh});
+    const mat=new T.MeshStandardMaterial({color:C.land,roughness:.75,clippingPlanes:clip});
+    const g=new T.Group();if(shapes.length){const me=new T.Mesh(new T.ExtrudeGeometry(shapes,{depth:.014,bevelEnabled:false}),mat);me.userData.ci=ci;g.add(me);meshes.push(me)}
+    c.p.forEach(rs=>{const r=rs[0];for(let i=0;i<r.length;i++){const a=P(r[i]),b=P(r[(i+1)%r.length]);edge.push(a.x,a.y,.0145,b.x,b.y,.0145)}});
+    if(c.small||!shapes.length){const d=new T.Mesh(new T.CylinderGeometry(.03,.03,.02,24),mat);d.rotation.x=Math.PI/2;d.position.set((c.cx+ox)*s,(c.cy+oy)*s,.02);d.userData.ci=ci;d.userData.disc=1;g.add(d);meshes.push(d);
+      const ring=new T.Mesh(new T.TorusGeometry(.03,.004,6,24),new T.MeshBasicMaterial({color:C.edge,clippingPlanes:clip}));ring.position.copy(d.position);ring.position.z=.031;g.add(ring)}
+    mapIn.add(g);cs.push({g,mat,state:'land',lift:0,blink:0,c})});
+  const eg=new T.BufferGeometry();eg.setAttribute('position',new T.Float32BufferAttribute(edge,3));const el=new T.LineSegments(eg,new T.LineBasicMaterial({color:C.edge,clippingPlanes:clip}));mapIn.add(el);mapIn.userData.edge=el;
+  setZoom(1,0,0)}
+function setZoom(z,px,py){Z=Math.max(1,Math.min(9,z));const u=mapIn.userData;mapIn.scale.set(Z,Z,1);
+  const lim=(v,L)=>Math.max(-L*(Z-1)/2,Math.min(L*(Z-1)/2,v));mapIn.position.set(lim(px,W0),lim(py,H0),0);
+  cs.forEach(o=>o.g.children.forEach(k=>{if(k.userData.disc){k.scale.set(1/Z,1,1/Z)}else if(k.geometry&&k.geometry.type==='TorusGeometry')k.scale.set(1/Z,1/Z,1)}));lbls.forEach(l=>l.scale.set(l.userData.w/Z,l.userData.h/Z,1))}
+function zoomAt(f,lp){const p=mapIn.position;const lx=(lp?lp.x:0),ly=(lp?lp.y:0);const nz=Math.max(1,Math.min(9,Z*f)),k=nz/Z;setZoom(nz,lx-(lx-p.x)*k,ly-(ly-p.y)*k)}
+function label(ci){const c=cs[ci].c,u=mapIn.userData,cv=document.createElement('canvas'),x=cv.getContext('2d'),n=c.n.replace(' (Eswatini)','').replace('République démocratique du Congo','RD Congo').replace('Territoire de la capitale australienne','Capitale (ACT)');
+  x.font=`800 44px ${FF}`;const w=x.measureText(n).width+30;cv.width=w;cv.height=64;x.font=`800 44px ${FF}`;x.fillStyle='rgba(31,42,51,.82)';x.beginPath();x.roundRect?x.roundRect(0,0,w,64,26):x.rect(0,0,w,64);x.fill();x.fillStyle='#fff';x.textAlign='center';x.textBaseline='middle';x.fillText(n,w/2,34);
+  const t=new T.CanvasTexture(cv);t.colorSpace=T.SRGBColorSpace;const sp=new T.Sprite(new T.SpriteMaterial({map:t,depthTest:false,transparent:true,clippingPlanes:mapG.userData.clip}));const h=.05;sp.userData={w:h*w/64,h};sp.scale.set(sp.userData.w/Z,h/Z,1);sp.position.set((c.cx+u.ox)*u.s,(c.cy+u.oy)*u.s+(c.small?.05:0),.06);sp.renderOrder=8;mapIn.add(sp);lbls.push(sp)}
+
+/* ---------- partie ---------- */
+let G=null,mode='menu';
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]]}return a};
+function pool(){return M[opt.map].c.map((c,i)=>i).filter(i=>opt.zone==='all'||M[opt.map].c[i].z===opt.zone)}
+function start(list){audio();fold();buildMap(opt.map);const P=pool(),inZ=new Set(P);cs.forEach((o,i)=>setState(i,inZ.has(i)?'land':'off'));
+  G={q:shuffle(list||P),i:0,n:(list||P).length,err:0,errs:[],t0:performance.now(),combo:0,tried:false,best:0};showPlay();next()}
+function next(){if(!G)return;if(G.i>=G.q.length||(opt.mode==='learn'))return opt.mode==='learn'?hudLearn():end();cur=G.q[G.i];G.tried=false;hudUpd()}
+function hudLearn(){cur=null;hud('Découverte','Vise un pays pour voir son nom',[M[opt.map].name,'',''])}
+function hudUpd(){const s=Math.round((performance.now()-G.t0)/1000);hud(opt.mode==='death'?'Mort subite · vise':'Vise',M[opt.map].c[cur].n,[`${G.i}/${G.n}`,`fautes ${G.err}`,`${Math.floor(s/60)}:${String(s%60).padStart(2,'0')}${G.combo>2?'  ·  combo x'+G.combo:''}`])}
+function setState(i,st){const o=cs[i];o.state=st;o.mat.color.copy(st==='off'?COL.ctx:st==='ok'?COL.good:st==='ko'?COL.bad:COL.land)}
+function pick(ci){if(!G||G.dead||!G.q)return;const n=M[opt.map].c[ci].n;
+  if(opt.mode==='learn'){toast(n);tone(660,.12);cs[ci].lift=1;return}
+  if(cs[ci].state==='off'){toast(n+' : hors de la zone',C.soft);return}
+  if(ci===cur){const first=!G.tried,cb=G.combo+(first?1:0);setState(ci,first?'ok':'ko');cs[ci].lift=1;label(ci);G.combo=first?G.combo+1:0;G.best=Math.max(G.best,G.combo);
+    const kf=Math.pow(2,Math.min(first?cb:0,12)/12);tone(520*kf,.12,'triangle',.18);setTimeout(()=>tone(780*kf,.14,'triangle',.14),70);buzz(.4,40);
+    toast(G.combo>=3?`${n} · combo x${G.combo}`:n,C.good);G.i++;next();return}
+  G.combo=0;tone(150,.3,'sawtooth',.16,80);buzz(1,140);
+  if(!G.tried){G.err++;G.errs.push(cur)}G.tried=true;
+  if(opt.mode==='train'){toast(`Non : ça, c'est ${n}`,C.bad);hudUpd();return}
+  const c0=cur;cs[c0].blink=1.6;toast(`Raté : tu as visé ${n}`,C.bad);
+  if(opt.mode==='death'){G.dead=true;setTimeout(end,1700);return}
+  setTimeout(()=>{if(G&&cs[c0]){setState(c0,'ko');label(c0)}},1600);G.i++;setTimeout(next,600)}
+function end(){if(!G)return;const g=G;G=null;mode='end';cur=null;const ok=g.n-g.err;let big,verdict;
+  if(opt.mode==='death'){const k=opt.map+'-'+opt.zone,r=rec(k),sc=g.i;if(sc>r)setRec(k,sc);big=`${sc} pays`;verdict=sc>r?'Nouveau record !':`Record : ${Math.max(r,sc)}`}
+  else{const note=Math.round(ok/g.n*200)/10;big=`${String(note).replace('.',',')} / 20`;verdict=note>=18?'Impeccable.':note>=14?'Solide, encore quelques pièges.':note>=10?'La moitié est là. Refais tes erreurs.':'Passe en Entraînement, puis reviens.'}
+  const errs=[...new Set(g.errs)];G={errs};
+  BIG.x.clearRect(0,0,BIG.W,BIG.H);pill(BIG.x,BIG.W,BIG.H,'#ffffff',C.ink);const x=BIG.x;x.fillStyle=C.ink;x.font=`800 ${BIG.H*.2}px ${FF}`;x.textAlign='center';x.textBaseline='middle';x.fillText(big,BIG.W/2,BIG.H*.17);
+  x.font=`500 ${BIG.H*.07}px ${FF}`;x.fillStyle=C.soft;x.fillText(`${verdict}  ·  combo max x${g.best}`,BIG.W/2,BIG.H*.33);
+  const L=errs.slice(0,12).map(i=>M[opt.map].c[i].n);x.fillStyle=C.bad;x.font=`700 ${BIG.H*.06}px ${FF}`;L.forEach((n,i)=>x.fillText(n,BIG.W*(i%2?.72:.28),BIG.H*(.46+Math.floor(i/2)*.075)));if(errs.length>12){x.fillStyle=C.soft;x.fillText(`et ${errs.length-12} autres`,BIG.W/2,BIG.H*.93)}if(!errs.length){x.fillStyle=C.good;x.fillText('Aucune erreur',BIG.W/2,BIG.H*.55)}
+  BIG.t.needsUpdate=true;showEnd(errs.length)}
+
+/* ---------- menus ---------- */
+const E=(id,w,h,x,y,z,t)=>`<a-entity id="${id}" geometry="primitive:plane;width:${w};height:${h}" material="shader:flat;transparent:true" position="${x} ${y} ${z}" tl="t:${t}"></a-entity>`;
+const ALL=[];const vis=(id,on)=>{const e=$(id);e.setAttribute('visible',on);e.classList.toggle('btn',!!on)};
+function refresh(){document.querySelectorAll('[raycaster]').forEach(e=>{const r=e.components.raycaster;r&&r.refreshObjects&&r.refreshObjects()})}
+const GROUPS={menu:['#title',...M.map((m,i)=>'#m'+i),...MODES.map((m,i)=>'#o'+i),...[0,1,2,3,4,5].map(i=>'#z'+i),'#go'],play:['#bMenu','#bIn','#bOut','#bFit'],end:['#redo','#again','#bMenu2']};
+function show(g){mode=g;for(const k in GROUPS)GROUPS[k].forEach(id=>vis(id,k===g));HUD.m.visible=g==='play';BIG.m.visible=g==='end';TOAST.m.visible=false;if(mapG)mapG.visible=g!=='menu';if(g==='menu')paint();refresh()}
+const showPlay=()=>show('play'),showEnd=n=>{show('end');vis('#redo',n>0)};
+function paint(){M.forEach((m,i)=>$('#m'+i).setAttribute('tl',{t:m.name,sub:`${m.c.length} ${i===3?'États et territoires':'pays'}`,on:i===opt.map}));
+  MODES.forEach((m,i)=>$('#o'+i).setAttribute('tl',{t:m[1],sub:m[2],on:m[0]===opt.mode}));
+  const Zs=[['all','Tout']].concat(Object.entries(M[opt.map].zones));if(!Zs.some(z=>z[0]===opt.zone))opt.zone='all';
+  for(let i=0;i<6;i++){const z=Zs[i];if(!z){vis('#z'+i,false);continue}const n=M[opt.map].c.filter(c=>z[0]==='all'||c.z===z[0]).length;$('#z'+i).setAttribute('tl',{t:z[1],sub:n+'',on:z[0]===opt.zone});$('#z'+i).dataset.z=z[0]}
+  const r=rec(opt.map+'-'+opt.zone);$('#go').setAttribute('tl',{t:'Commencer',sub:r?`record en mort subite : ${r}`:'',on:true})}
+function align(){if(!scene.is('vr-mode')){stage.position.set(0,0,0);stage.rotation.set(0,0,0);return}const cam=$('#cam').object3D,v=new T.Vector3(),q=new T.Quaternion(),f=new T.Vector3();cam.getWorldPosition(v);cam.getWorldQuaternion(q);f.set(0,0,-1).applyQuaternion(q);stage.position.set(v.x,v.y-1.6,v.z);stage.rotation.set(0,Math.atan2(-f.x,-f.z),0)}
+
+/* ---------- visée ---------- */
+const ray=new T.Raycaster(),hit={pt:null};let stick=[0,0],drag=null;
+function rays(){const out=[];if(scene.is('vr-mode')){['#hR','#hL'].forEach(id=>{const r=$(id).components.raycaster;if(r&&r.raycaster)out.push({rc:r.raycaster,el:$(id)})})}else{const r=scene.components.raycaster;if(r&&r.raycaster)out.push({rc:r.raycaster,el:scene})}return out}
+function aim(){hover=null;hit.pt=null;if(!mapG||mode==='menu')return;for(const R of rays()){const ui=R.el.components.raycaster.intersectedEls;if(ui&&ui.length)continue;const I=R.rc.intersectObjects(meshes,false);
+  for(const h of I){const lp=mapG.worldToLocal(h.point.clone());if(Math.abs(lp.x)>W0/2||Math.abs(lp.y)>H0/2)continue;hover=h.object.userData.ci;hit.pt=lp;return}
+  const S=R.rc.intersectObject(mapG.children[1],false);if(S.length){hit.pt=mapG.worldToLocal(S[0].point.clone())}}}
+function fire(el){if(mode!=='play')return;const r=el&&el.components&&el.components.raycaster;if(r&&r.intersectedEls&&r.intersectedEls.length)return;if(hover!==null)pick(hover)}
+
+/* ---------- boucle ---------- */
+window.__u=(dt,t)=>{if(!stage)return;if(mapG){mapG.updateMatrixWorld(true);const U=mapG.userData;U.base.forEach((q,i)=>U.clip[i].copy(q).applyMatrix4(mapG.matrixWorld))}aim();
+  if(mode==='play'&&(stick[0]||stick[1])){if(Math.abs(stick[1])>.5&&Math.abs(stick[0])<.4)zoomAt(1-stick[1]*dt*1.6,hit.pt||null);else setZoom(Z,mapIn.position.x-stick[0]*dt*1.4,mapIn.position.y+stick[1]*dt*1.4)}
+  cs.forEach((o,i)=>{const want=(i===hover&&mode==='play')?.6:o.lift;o.lift=Math.max(0,o.lift-dt*.8);const s=1+Math.max(want,o.lift)*1.6;o.g.scale.z=s;o.g.position.z=0;
+    if(o.blink>0){o.blink-=dt;o.mat.color.copy(Math.sin(o.blink*18)>0?COL.hint:COL.land)}else if(i===hover&&o.state==='land'&&mode==='play')o.mat.color.copy(COL.hover);else setColor(o)});
+  if(toastT>0){toastT-=dt;if(toastT<=0)TOAST.m.visible=false}
+  if(G&&cur!==null&&mode==='play'&&Math.floor(t)!==window.__s){window.__s=Math.floor(t);hudUpd()}};
+function setColor(o){o.mat.color.copy(o.state==='off'?COL.ctx:o.state==='ok'?COL.good:o.state==='ko'?COL.bad:COL.land)}
+
+function init(){stage=$('#stage').object3D;const R=scene.renderer;R.localClippingEnabled=true;
+  stage.add(new T.HemisphereLight(0xffffff,0xb9c2c1,.75));const d=new T.DirectionalLight(0xffffff,1.0);d.position.set(-2,4,3);stage.add(d);
+  const fl=new T.Mesh(new T.CircleGeometry(12,64),new T.MeshStandardMaterial({color:0xc9d3d6,roughness:.95}));fl.rotation.x=-Math.PI/2;stage.add(fl);
+  const wall=new T.Mesh(new T.CylinderGeometry(7,7,6,64,1,true,Math.PI*.55,Math.PI*.9),new T.MeshStandardMaterial({color:0xe9eef0,side:T.BackSide,roughness:1}));wall.position.y=3;stage.add(wall);
+  HUD=panel(2.6,.42,-.35,2.88,-2.75);TOAST=panel(1.5,.22,1.3,2.88,-2.72);BIG=panel(2.6,1.5,0,1.7,-2.3);HUD.m.visible=BIG.m.visible=TOAST.m.visible=false;
+  $('#stage').insertAdjacentHTML('beforeend',E('title',2.4,.3,0,2.55,-2.6,'Cartes muettes')+M.map((m,i)=>E('m'+i,.62,.3,(-.99+.66*i).toFixed(2),2.15,-2.6,m.name)).join('')+MODES.map((m,i)=>E('o'+i,.62,.3,(-.99+.66*i).toFixed(2),1.75,-2.6,m[1])).join('')+
+    [0,1,2,3,4,5].map(i=>E('z'+i,.42,.24,(-1.1+.44*i).toFixed(2),1.38,-2.6,'')).join('')+E('go',1.2,.3,0,.98,-2.6,'Commencer')+
+    E('bMenu',.42,.18,-1.2,.42,-2.3,'Menu')+E('bIn',.26,.18,.5,.42,-2.3,'+')+E('bOut',.26,.18,.8,.42,-2.3,'−')+E('bFit',.42,.18,1.15,.42,-2.3,'Recentrer')+
+    E('redo',.9,.24,-.98,.75,-2.25,'Refaire mes erreurs')+E('again',.9,.24,0,.75,-2.25,'Recommencer')+E('bMenu2',.9,.24,.98,.75,-2.25,'Menu'));
+  setTimeout(()=>{const T2=$('#title');T2.setAttribute('tl',{t:'Cartes muettes',sub:'Choisis la carte, le mode et la zone'});
+    M.forEach((m,i)=>$('#m'+i).addEventListener('click',()=>{opt.map=i;opt.zone='all';save();paint()}));MODES.forEach((m,i)=>$('#o'+i).addEventListener('click',()=>{opt.mode=m[0];save();paint()}));
+    for(let i=0;i<6;i++)$('#z'+i).addEventListener('click',()=>{opt.zone=$('#z'+i).dataset.z;save();paint()});
+    $('#go').addEventListener('click',()=>start());$('#again').addEventListener('click',()=>start());$('#redo').addEventListener('click',()=>{const e=G&&G.errs;if(e&&e.length)start(e)});
+    $('#bMenu').addEventListener('click',()=>{G=null;show('menu')});$('#bMenu2').addEventListener('click',()=>{G=null;show('menu')});
+    $('#bIn').addEventListener('click',()=>zoomAt(1.5,hit.pt));$('#bOut').addEventListener('click',()=>zoomAt(1/1.5,hit.pt));$('#bFit').addEventListener('click',()=>setZoom(1,0,0));
+    document.querySelectorAll('[tl]').forEach(e=>{e.addEventListener('mouseenter',()=>{e.dataset.hv='1';e.components.tl.update()});e.addEventListener('mouseleave',()=>{e.dataset.hv='0';e.components.tl.update()})});
+    ['#hR','#hL'].forEach(id=>{const e=$(id);e.addEventListener('triggerdown',()=>{audio();fire(e)});e.addEventListener('thumbstickmoved',ev=>{const d=ev.detail||{};stick=[Math.abs(d.x)>.2?d.x:0,Math.abs(d.y)>.2?d.y:0]})});
+    const cvs=scene.canvas;cvs.addEventListener('pointerdown',e=>{drag={x:e.clientX,y:e.clientY,px:mapIn?mapIn.position.x:0,py:mapIn?mapIn.position.y:0,moved:false}});
+    cvs.addEventListener('pointermove',e=>{if(!drag||mode!=='play'||Z<=1.01)return;const dx=e.clientX-drag.x,dy=e.clientY-drag.y;if(Math.hypot(dx,dy)>6)drag.moved=true;if(drag.moved){const k=3.2/cvs.clientWidth;setZoom(Z,drag.px+dx*k,drag.py-dy*k)}});
+    cvs.addEventListener('pointerup',()=>{if(drag&&!drag.moved&&!scene.is('vr-mode')){audio();fire(scene)}drag=null});
+    cvs.addEventListener('wheel',e=>{if(mode==='play'){e.preventDefault();zoomAt(e.deltaY<0?1.15:1/1.15,hit.pt)}},{passive:false});
+    show('menu');document.fonts&&document.fonts.load(`800 40px Outfit`).then(()=>{document.querySelectorAll('[tl]').forEach(e=>e.components.tl.update())}).catch(()=>{})},250);
+  const fov=()=>{if(scene.is('vr-mode'))return;const a=innerWidth/innerHeight;$('#cam').setAttribute('camera','fov',a<1?100:Math.max(60,Math.min(80,2*Math.atan(Math.tan(.64)/a)*180/Math.PI)));$('#rig').object3D.position.z=a<1?1.6:(a<1.5?.7:0)};fov();addEventListener('resize',fov);
+  scene.addEventListener('enter-vr',()=>{fold();audio();$('#rig').object3D.position.z=0;setTimeout(align,700)});scene.addEventListener('exit-vr',()=>{align();fov()});
+  if(innerWidth<720)fold();window.__t={start,pick,opt,get st(){return{mode,cur,G,Z,hover}},zoomAt,setZoom,show}}
+if(scene.hasLoaded)init();else scene.addEventListener('loaded',init);
+}
+</script>
+</body>
+</html>
