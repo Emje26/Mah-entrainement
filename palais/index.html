@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<!--
+  PALAIS MENTAL VR : les 60 mots de « Time and Human Life » rangés dans une rotonde.
+  Casque : « Entrer en VR », vise une alcôve au sol et appuie sur la gâchette pour t'y téléporter,
+  vise un socle et gâchette pour retourner sa plaque. Écran : glisse pour regarder, touche une alcôve
+  pour y aller, touche une plaque pour la retourner. Mode « Retrouve » : seul le français est visible.
+-->
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Palais mental</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,500;0,600;1,500&display=swap" rel="stylesheet">
+<style>
+/* VOICE  : nuit calme, une salle qu'on habite
+   IDEA   : une rotonde de musée, dix alcôves, une par thème
+   PICTURE: la salle elle-même en 3D
+   COLOUR : nuit #05060c, ambre #e8c9a0, indigo #8f9cf2, une teinte par alcôve
+   TYPE   : Cormorant Garamond pour les mots */
+:root{color-scheme:dark;--bg:#05060c;--panel:#10121c;--line:#232839;--ink:#efe9dc;--mut:#8d8fa6;--acc:#e8c9a0;--acc2:#8f9cf2;--serif:"Cormorant Garamond",Georgia,serif}
+*{box-sizing:border-box;min-width:0;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);font:16px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer;border:0;background:none}
+button:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+#cv{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
+#menu{position:fixed;inset:0;overflow:auto;background:rgba(5,6,12,.9);z-index:5}
+#menu .in{max-width:520px;margin:0 auto;padding:30px 18px 40px}
+h1{font-family:var(--serif);font-size:46px;line-height:1.05;font-weight:600;margin:20px 0 6px;text-align:center}
+.lead{color:var(--mut);text-align:center;margin:0 0 16px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:14px;margin:10px 0}
+.lab{font-size:13px;color:var(--mut);margin:0 0 8px}
+.seg{display:flex;gap:4px;background:#0a0c15;border:1px solid var(--line);border-radius:14px;padding:4px}
+.seg button{flex:1;min-height:44px;border-radius:10px;color:var(--mut);white-space:nowrap}
+.seg button.on{background:var(--acc2);color:#fff;font-weight:600}
+.go{display:block;width:100%;min-height:54px;margin-top:12px;border-radius:999px;background:var(--acc);color:#07080f;font-size:18px;font-weight:700}
+.go.alt{background:var(--panel);color:var(--ink);border:1px solid var(--line)}
+.go:disabled{opacity:.45}
+.small{color:var(--mut);font-size:14px;line-height:1.5;margin:8px 2px}
+.msg{color:var(--acc);font-size:14px;margin:8px 2px 0}
+#hud{position:fixed;left:0;right:0;bottom:0;display:none;flex-direction:column;align-items:center;gap:8px;padding:10px 10px 18px;z-index:3;pointer-events:none}
+#hud .row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;pointer-events:auto}
+#hud button{min-height:44px;padding:0 14px;border-radius:999px;background:rgba(5,6,12,.75);border:1px solid rgba(239,233,220,.22);font-size:14px;white-space:nowrap}
+#hud button.on{background:var(--acc2);border-color:var(--acc2)}
+#where{font-family:var(--serif);font-size:22px;font-weight:600;color:var(--acc);text-shadow:0 2px 8px #000;pointer-events:none}
+#cnt{font-size:13px;color:var(--mut);pointer-events:none}
+</style>
+</head>
+<body>
+<canvas id="cv"></canvas>
+
+<section id="menu"><div class="in">
+  <h1>Palais mental</h1>
+  <p class="lead">Une rotonde, dix alcôves, une par thème. Dans chacune, six socles et six mots, chacun avec une image pour s'accrocher.</p>
+  <div class="card">
+    <p class="lab">Mode</p>
+    <div class="seg" id="sMode"><button data-v="visite" class="on">Visite</button><button data-v="retrouve">Retrouve</button></div>
+    <p class="small">Visite : tout est écrit. Retrouve : seul le français est visible, tu dis l'anglais puis tu retournes la plaque.</p>
+    <button class="go" id="vrGo" disabled>Entrer en VR</button>
+    <button class="go alt" id="scrGo">Sur l'écran</button>
+    <p class="msg" id="msg">Je vérifie si la VR est disponible…</p>
+  </div>
+  <div class="card">
+    <p class="small" style="margin-top:0"><b style="color:var(--ink)">La méthode.</b> Fais le tour toujours dans le même sens, de l'alcôve 1 à la 10. Devant chaque socle, regarde l'objet, lis l'image, dis le mot. Plus tard, les yeux fermés, refais le trajet de tête : chaque place te rendra son mot.</p>
+    <p class="small"><b style="color:var(--ink)">Casque.</b> Vise le sol d'une alcôve et appuie sur la gâchette pour t'y téléporter. Vise une plaque pour la retourner. A ou X : retour au centre.</p>
+    <p class="small"><b style="color:var(--ink)">Allongé.</b> Maintiens le bouton de saisie (sous le majeur) : toute la salle suit ta main, place-la au-dessus de toi et relâche. B ou Y la remet droite.</p>
+    <p class="small"><b style="color:var(--ink)">Écran.</b> Glisse pour regarder autour. Touche une alcôve pour y aller, une plaque pour la retourner. Flèches pour passer d'une alcôve à l'autre.</p>
+    <p class="small">Assis ou debout dans un espace dégagé. Si la tête tourne, retire le casque.</p>
+  </div>
+</div></section>
+
+<div id="hud">
+  <div id="where">Centre de la rotonde</div>
+  <div id="cnt"></div>
+  <div class="row"><button id="prev" aria-label="Alcôve précédente">← Alcôve</button><button id="ctr">Centre</button><button id="next" aria-label="Alcôve suivante">Alcôve →</button></div>
+  <div class="row"><button id="mode">Mode : Visite</button><button id="all">Tout retourner</button><button id="quit">Menu</button></div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script>
+{
+const BL=["Le jour et la nuit","Gérer son temps","La durée","La fréquence","Le passé","Le présent et l'avenir","Naître et grandir","L'âge adulte","Vieillir","Le deuil et l'au-delà"];
+const HUE=[0xe8c9a0,0x9fd3c7,0x8f9cf2,0xf0a17a,0xc9a27e,0x7fb7e8,0xf2b8cc,0xb7d98b,0xa89fd8,0xd7d2c4];
+const W=[
+["a fortnight","une quinzaine","fourteen nights : quatorze nuits"],
+["dawn","l'aube","le jour se lève sur la ligne d'horizon"],
+["dusk","le crépuscule","dust : le jour retombe en poussière"],
+["in the small hours","au petit matin","les petites heures : 1 h, 2 h, 3 h"],
+["a night owl","un noctambule","le hibou qui veille toute la nuit"],
+["it's pitch-dark","il fait nuit noire","noir comme la poix (pitch)"],
+["a schedule","un programme, un horaire","le tableau des départs de la gare"],
+["peak hours","les heures de pointe","peak : le pic de la courbe"],
+["the off-season","la basse saison","la saison éteinte (off)"],
+["waste time","gaspiller son temps","waste : du temps à la poubelle"],
+["make up for lost time","rattraper le temps perdu","on refabrique le temps perdu"],
+["be pressed for time","être pressé par le temps","pressé comme un citron par l'horloge"],
+["brevity","la brièveté","brève, bref"],
+["a lapse of time","un laps de temps","le même mot : un laps"],
+["elapse","s'écouler","le temps glisse hors (e-) du laps"],
+["curtail","écourter","cut the tail : on coupe la queue"],
+["lasting","durable","last : durer"],
+["transient","éphémère, transitoire","en transit : ça ne fait que passer"],
+["once in a while","de temps en temps","une fois, de temps en temps"],
+["every other day","un jour sur deux","un jour oui, l'autre non"],
+["recur","se reproduire, revenir","re-courir : ça revient en courant"],
+["quarterly","trimestriel","un quart d'année : trois mois"],
+["whenever","chaque fois que","when + ever : quand que ce soit"],
+["straight away","tout de suite","tout droit, sans détour"],
+["a keepsake","un cadeau souvenir","keep : à garder précieusement"],
+["homesickness","le mal du pays","sick of home : malade de la maison"],
+["old-fashioned","vieux-jeu, démodé","à la vieille mode (fashion)"],
+["outdated","dépassé, périmé","out of date : la date est passée"],
+["formerly","autrefois","former : l'ancien"],
+["lately","dernièrement","late : récemment, ces derniers temps"],
+["nowadays","de nos jours","now + days : les jours de maintenant"],
+["sooner or later","tôt ou tard","plus tôt ou plus tard, ça arrive"],
+["from now on","désormais","à partir de maintenant"],
+["foresee","prévoir","fore + see : voir avant"],
+["impending","imminent","qui pend au-dessus de nous"],
+["in the long run","à long terme","sur la longue course (run)"],
+["pregnancy","la grossesse","prégnant : plein, porteur"],
+["be expecting a baby","attendre un enfant","expect : on attend quelqu'un"],
+["give birth to","donner naissance à","give + birth : donner la naissance"],
+["a toddler","un bambin","toddle : il trottine"],
+["breastfeed","allaiter","breast + feed : nourrir au sein"],
+["the generation gap","le fossé des générations","mind the gap : le vide entre deux quais"],
+["gullible","naïf, crédule","gull : la mouette qui gobe tout"],
+["in one's prime","dans la force de l'âge","prime : le premier choix, le meilleur"],
+["look young for one's age","faire jeune pour son âge","on a l'air jeune pour son âge"],
+["be well-preserved","être bien conservé","préservé comme une conserve"],
+["a wrinkle","une ride","un pli froissé sur la peau"],
+["a receding hairline","un front dégarni","recede : la ligne recule"],
+["wither","se faner, dépérir","la fleur fane, tête basse"],
+["ramble","radoter","il randonne dans ses phrases, sans fin"],
+["be in one's dotage","être gâteux","a dotard : un vieillard gâteux"],
+["bedridden","grabataire","riding the bed : cloué au lit"],
+["life expectancy","l'espérance de vie","expect : ce qu'on attend de la vie"],
+["take early retirement","prendre une retraite anticipée","early : la retraite arrive tôt"],
+["bereavement","le deuil, la perte","bereave : être privé de quelqu'un"],
+["a widow","une veuve","widow : le vide (wide) à côté d'elle"],
+["a coffin","un cercueil","le coffre de la fin"],
+["mourn somebody","pleurer la mort de quelqu'un","mourn, morne : on porte le deuil"],
+["rejuvenate","rajeunir","re + juvénile : redevenir jeune"],
+["the after-life","l'au-delà","after + life : la vie d'après"]
+].map((x,i)=>({en:x[0],fr:x[1],im:x[2],b:Math.floor(i/6),j:i%6,i,rev:false}));
+
+const $=id=>document.getElementById(id);
+let mode="visite",running=false;
+$("sMode").onclick=e=>{const b=e.target.closest("button");if(!b)return;[...$("sMode").children].forEach(x=>x.classList.toggle("on",x===b));mode=b.dataset.v};
+
+/* ---------- scène ---------- */
+const cv=$("cv"),R=new THREE.WebGLRenderer({canvas:cv,antialias:true});
+R.setPixelRatio(Math.min(devicePixelRatio,2));R.xr.enabled=true;
+const scene=new THREE.Scene();scene.background=new THREE.Color(0x05060c);scene.fog=new THREE.Fog(0x05060c,14,34);
+const camera=new THREE.PerspectiveCamera(72,1,.05,80);
+const dolly=new THREE.Group();dolly.add(camera);scene.add(dolly);
+const stage=new THREE.Group(),inner=new THREE.Group();stage.add(inner);
+scene.add(new THREE.HemisphereLight(0x8f9cf2,0x1a1410,.55));
+const top=new THREE.PointLight(0xe8c9a0,.9,30);top.position.set(0,9,0);scene.add(top);
+
+const RW=13.8,RS=9.2,RP=11.9,N=10;
+const floor=new THREE.Mesh(new THREE.CircleGeometry(RW,80),new THREE.MeshStandardMaterial({color:0x14151f,roughness:.95}));
+floor.rotation.x=-Math.PI/2;scene.add(floor);
+const wall=new THREE.Mesh(new THREE.CylinderGeometry(RW,RW,7,80,1,true),new THREE.MeshStandardMaterial({color:0x101220,roughness:1,side:THREE.BackSide}));
+wall.position.y=3.5;scene.add(wall);
+const dome=new THREE.Mesh(new THREE.SphereGeometry(RW,48,16,0,Math.PI*2,0,Math.PI/2),new THREE.MeshBasicMaterial({color:0x07080f,side:THREE.BackSide}));
+dome.position.y=7;scene.add(dome);
+const stars=new THREE.BufferGeometry(),sp=new Float32Array(600*3);
+for(let i=0;i<600;i++){const u=Math.random()*6.283,v=Math.random()*1.2+.2,r=RW*.97;sp[i*3]=Math.cos(u)*Math.cos(v)*r;sp[i*3+1]=7+Math.sin(v)*r;sp[i*3+2]=Math.sin(u)*Math.cos(v)*r}
+stars.setAttribute("position",new THREE.BufferAttribute(sp,3));scene.add(new THREE.Points(stars,new THREE.PointsMaterial({color:0xcfc6ff,size:.05})));
+const centerRing=new THREE.Mesh(new THREE.RingGeometry(1.1,1.16,64),new THREE.MeshBasicMaterial({color:0xe8c9a0,transparent:true,opacity:.5}));
+centerRing.rotation.x=-Math.PI/2;centerRing.position.y=.01;scene.add(centerRing);
+
+function txtCanvas(w,h){const c=document.createElement("canvas");c.width=w;c.height=h;return c}
+const SERIF='"Cormorant Garamond",Georgia,serif',SANS='-apple-system,Segoe UI,sans-serif';
+function fitFont(g,t,max,size,style){do{g.font=`${style} ${size}px ${SERIF}`;size-=4}while(g.measureText(t).width>max&&size>24);return size+4}
+function wrap(g,t,max){const w=t.split(" "),L=[];let l="";w.forEach(x=>{const n=l?l+" "+x:x;if(g.measureText(n).width>max&&l){L.push(l);l=x}else l=n});L.push(l);return L}
+
+const angOf=k=>k/N*Math.PI*2-Math.PI/2;
+const pads=[],plates=[],objs=[];
+const GEO=[new THREE.IcosahedronGeometry(.22,0),new THREE.TorusGeometry(.17,.06,12,32),new THREE.ConeGeometry(.2,.42,6),new THREE.BoxGeometry(.32,.32,.32),new THREE.OctahedronGeometry(.24,0),new THREE.TorusKnotGeometry(.13,.045,64,8)];
+for(let k=0;k<N;k++){
+  const a=angOf(k),col=new THREE.Color(HUE[k]);
+  const pad=new THREE.Mesh(new THREE.CircleGeometry(2.4,48),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.1}));
+  pad.rotation.x=-Math.PI/2;pad.position.set(Math.cos(a)*(RS+.9),.015,Math.sin(a)*(RS+.9));pad.userData={alc:k};scene.add(pad);pads.push(pad);
+  const edge=new THREE.Mesh(new THREE.RingGeometry(2.36,2.42,64),new THREE.MeshBasicMaterial({color:col,transparent:true,opacity:.45}));
+  edge.rotation.x=-Math.PI/2;edge.position.copy(pad.position);edge.position.y=.02;scene.add(edge);
+  const c=txtCanvas(1024,256),g=c.getContext("2d");g.textAlign="center";g.textBaseline="middle";
+  g.fillStyle="#"+col.getHexString();g.font=`600 54px ${SANS}`;g.fillText(String(k+1),512,60);
+  g.font=`600 ${fitFont(g,BL[k],980,120,"600")}px ${SERIF}`;g.fillStyle="#fbf6ea";g.fillText(BL[k],512,170);
+  const t=new THREE.Mesh(new THREE.PlaneGeometry(4,1),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(c),transparent:true}));
+  t.position.set(Math.cos(a)*(RW-.15),3.6,Math.sin(a)*(RW-.15));t.lookAt(0,3.6,0);scene.add(t);
+  const lamp=new THREE.PointLight(col,.7,6);lamp.position.set(Math.cos(a)*(RP-.4),2.6,Math.sin(a)*(RP-.4));scene.add(lamp);
+  const ca=a+Math.PI/N,col2=new THREE.Mesh(new THREE.CylinderGeometry(.22,.26,7,16),new THREE.MeshStandardMaterial({color:0x1b1d2c,roughness:.8}));
+  col2.position.set(Math.cos(ca)*(RW-.6),3.5,Math.sin(ca)*(RW-.6));scene.add(col2);
+}
+const pedMat=new THREE.MeshStandardMaterial({color:0x2a2c3d,roughness:.6});
+W.forEach(w=>{
+  const a=angOf(w.b)+(w.j-2.5)*.098,x=Math.cos(a)*RP,z=Math.sin(a)*RP,col=new THREE.Color(HUE[w.b]);
+  const ped=new THREE.Mesh(new THREE.CylinderGeometry(.2,.26,1,20),pedMat);ped.position.set(x,.5,z);scene.add(ped);
+  const o=new THREE.Mesh(GEO[w.j],new THREE.MeshStandardMaterial({color:col,emissive:col,emissiveIntensity:.35,roughness:.35,metalness:.2}));
+  o.position.set(x,1.32,z);o.userData={w};scene.add(o);objs.push(o);
+  const c=txtCanvas(512,320);w.c=c;w.tex=new THREE.CanvasTexture(c);
+  const p=new THREE.Mesh(new THREE.PlaneGeometry(1.02,.64),new THREE.MeshBasicMaterial({map:w.tex,transparent:true}));
+  p.position.set(Math.cos(a)*(RP-.05),2.05,Math.sin(a)*(RP-.05));p.lookAt(0,2.05,0);p.userData={w};scene.add(p);plates.push(p);w.mesh=p;
+});
+function paint(w){const g=w.c.getContext("2d"),col="#"+new THREE.Color(HUE[w.b]).getHexString(),show=mode==="visite"||w.rev;
+  g.clearRect(0,0,512,320);g.fillStyle="rgba(8,9,16,.86)";g.beginPath();g.roundRect?g.roundRect(4,4,504,312,22):g.rect(4,4,504,312);g.fill();
+  g.strokeStyle=col;g.globalAlpha=.6;g.lineWidth=3;g.stroke();g.globalAlpha=1;g.textAlign="center";g.textBaseline="middle";
+  if(show){g.fillStyle="#fbf6ea";g.font=`600 ${fitFont(g,w.en,470,78,"600")}px ${SERIF}`;g.fillText(w.en,256,92);
+    g.fillStyle=col;g.font=`italic 500 ${fitFont(g,w.fr,470,46,"italic 500")}px ${SERIF}`;g.fillText(w.fr,256,168);
+    g.fillStyle="rgba(210,204,192,.85)";g.font=`italic 500 30px ${SERIF}`;const L=wrap(g,w.im,460);L.slice(0,2).forEach((l,i)=>g.fillText(l,256,234+i*36))}
+  else{g.fillStyle=col;g.font=`italic 500 ${fitFont(g,w.fr,470,58,"italic 500")}px ${SERIF}`;g.fillText(w.fr,256,120);
+    g.fillStyle="rgba(251,246,234,.8)";g.font=`600 76px ${SERIF}`;g.fillText("?",256,214)}
+  w.tex.needsUpdate=true}
+function paintAll(){W.forEach(paint);count()}
+function count(){const r=W.filter(w=>w.rev).length;$("cnt").textContent=mode==="retrouve"?`${r} / 60 plaques retournées · glisse pour voir les 6 socles`:"Glisse pour voir les 6 socles, puis alcôve suivante"}
+
+/* ---------- déplacements ---------- */
+let at=-1,yaw=0,pitch=0,tgt=null,vy=0;const vp=new THREE.Vector3();
+function place(){inner.rotation.y=-vy;inner.position.set(-vp.x,0,-vp.z).applyAxisAngle(new THREE.Vector3(0,1,0),-vy)}
+function goto(k){at=k;let p,y;
+  if(k<0){p=new THREE.Vector3(0,0,0);y=vy}
+  else{const a=angOf(k);const rs=R.xr.isPresenting||innerWidth>innerHeight?RS:7.6;p=new THREE.Vector3(Math.cos(a)*rs,0,Math.sin(a)*rs);y=Math.atan2(-Math.cos(a),-Math.sin(a))}
+  tgt={p,y,t:0,p0:vp.clone(),y0:vy};
+  $("where").textContent=k<0?"Centre de la rotonde":`${k+1} · ${BL[k]}`;$("cnt").dataset.k=k;
+  if(!R.xr.isPresenting)pitch=-.06}
+function flip(w){if(mode==="visite"){w.mesh.scale.setScalar(1.12);setTimeout(()=>w.mesh.scale.setScalar(1),250);return}w.rev=!w.rev;paint(w);count()}
+const ray=new THREE.Raycaster(),mv=new THREE.Vector2();
+function hit(obj){const h=ray.intersectObjects([...plates,...objs,...pads],false)[0];if(!h)return;const u=h.object.userData;
+  if(u.w){if(at!==u.w.b){goto(u.w.b)}else flip(u.w)}else if(u.alc!==undefined)goto(u.alc)}
+
+let down=null;
+cv.addEventListener("pointerdown",e=>{down={x:e.clientX,y:e.clientY,yaw,pitch,m:false};cv.setPointerCapture(e.pointerId)});
+cv.addEventListener("pointermove",e=>{if(!down)return;const dx=e.clientX-down.x,dy=e.clientY-down.y;if(Math.hypot(dx,dy)>6)down.m=true;
+  if(down.m){yaw=down.yaw+dx*.005;pitch=Math.max(-1.2,Math.min(1.2,down.pitch+dy*.004))}});
+cv.addEventListener("pointerup",e=>{if(down&&!down.m){mv.set(e.clientX/innerWidth*2-1,-(e.clientY/innerHeight)*2+1);ray.setFromCamera(mv,camera);hit()}down=null});
+addEventListener("keydown",e=>{if(!running)return;if(e.key==="ArrowRight")goto((at+1+N)%N);if(e.key==="ArrowLeft")goto((at<0?0:at-1+N)%N)});
+
+const ctrls=[0,1].map(i=>{const c=R.xr.getController(i);
+  const line=new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(),new THREE.Vector3(0,0,-1)]),new THREE.LineBasicMaterial({color:0xe8c9a0,transparent:true,opacity:.7}));
+  line.scale.z=12;c.add(line);
+  c.addEventListener("select",()=>{const m=new THREE.Matrix4().extractRotation(c.matrixWorld);ray.ray.origin.setFromMatrixPosition(c.matrixWorld);ray.ray.direction.set(0,0,-1).applyMatrix4(m);hit()});
+  c.addEventListener("squeezestart",()=>{c.updateMatrixWorld(true);stage.updateMatrix();grab={c,m:new THREE.Matrix4().copy(c.matrixWorld).invert().multiply(stage.matrix)}});
+  c.addEventListener("squeezeend",()=>{if(grab&&grab.c===c)grab=null});dolly.add(c);return c});
+let grab=null,btn={};
+function resetStage(){stage.position.set(0,0,0);stage.quaternion.set(0,0,0,1);stage.scale.set(1,1,1)}
+function pollPads(){const s=R.xr.getSession();if(!s)return;for(const src of s.inputSources){const g=src.gamepad;if(!g)continue;[4,5].forEach(b=>{const k=src.handedness+b,p=!!(g.buttons[b]&&g.buttons[b].pressed);if(p&&!btn[k]){b===5?resetStage():goto(-1)}btn[k]=p})}}
+
+$("prev").onclick=()=>goto((at<0?0:at-1+N)%N);$("next").onclick=()=>goto((at+1+N)%N);$("ctr").onclick=()=>goto(-1);
+$("mode").onclick=()=>{mode=mode==="visite"?"retrouve":"visite";$("mode").textContent="Mode : "+(mode==="visite"?"Visite":"Retrouve");paintAll()};
+$("all").onclick=()=>{const any=W.some(w=>!w.rev);W.forEach(w=>w.rev=any);paintAll()};
+$("quit").onclick=()=>{running=false;$("hud").style.display="none";$("menu").style.display="block";R.xr.getSession()?.end().catch(()=>{})};
+
+[...scene.children].filter(o=>o!==dolly).forEach(o=>inner.add(o));scene.add(stage);
+function resize(){if(R.xr.isPresenting)return;const w=innerWidth,h=innerHeight;R.setSize(w,h,false);camera.aspect=w/h;camera.fov=w<h?88:72;camera.updateProjectionMatrix()}
+addEventListener("resize",resize);resize();
+
+let last=0;
+R.setAnimationLoop(now=>{const dt=Math.min(.1,(now-(last||now))/1000);last=now;const t=now/1000;
+  objs.forEach((o,i)=>{o.rotation.y=t*.4+i;o.position.y=1.32+Math.sin(t*1.1+i)*.04});
+  if(tgt){tgt.t=Math.min(1,tgt.t+dt/.9);const e=.5-.5*Math.cos(Math.PI*tgt.t);vp.lerpVectors(tgt.p0,tgt.p,e);
+    let d=tgt.y-tgt.y0;d=Math.atan2(Math.sin(d),Math.cos(d));vy=tgt.y0+d*e;place();if(!R.xr.isPresenting&&tgt.t<1)yaw*=1-e;if(tgt.t>=1){if(!R.xr.isPresenting)yaw=0;tgt=null}}
+  if(grab){grab.c.updateMatrixWorld(true);new THREE.Matrix4().multiplyMatrices(grab.c.matrixWorld,grab.m).decompose(stage.position,stage.quaternion,stage.scale)}
+  if(R.xr.isPresenting)pollPads();
+  if(!R.xr.isPresenting){camera.position.set(0,1.6,0);camera.rotation.set(pitch,yaw,0,"YXZ")}
+  R.render(scene,camera)});
+
+function start(){running=true;W.forEach(w=>w.rev=false);paintAll();$("mode").textContent="Mode : "+(mode==="visite"?"Visite":"Retrouve");
+  $("menu").style.display="none";$("hud").style.display=R.xr.isPresenting?"none":"flex";vp.set(0,0,0);vy=0;place();resetStage();yaw=0;pitch=0;goto(-1);resize()}
+$("scrGo").onclick=()=>{document.documentElement.requestFullscreen?.().catch(()=>{});start()};
+$("vrGo").onclick=()=>navigator.xr.requestSession("immersive-vr",{optionalFeatures:["local-floor"]}).then(s=>{R.xr.setReferenceSpaceType("local-floor");R.xr.setSession(s);
+  s.addEventListener("end",()=>{if(running){$("hud").style.display="flex";resize()}});start()})
+  .catch(()=>{$("msg").textContent="Le navigateur a refusé la VR. Recharge la page dans le navigateur du casque et réessaie."});
+if(navigator.xr?.isSessionSupported){navigator.xr.isSessionSupported("immersive-vr").then(ok=>{$("vrGo").disabled=!ok;$("msg").textContent=ok?"Casque détecté : touche « Entrer en VR ».":"Pas de VR ici : visite sur l'écran, ou ouvre la page dans le navigateur du casque."}).catch(()=>{$("msg").textContent="VR bloquée sur cette page : visite sur l'écran."})}
+else $("msg").textContent="Pas de VR ici : visite sur l'écran, ou ouvre la page dans le navigateur du casque.";
+(document.fonts?document.fonts.load(`600 60px "Cormorant Garamond"`):Promise.resolve()).catch(()=>{}).then(()=>{if(running)paintAll()});
+paintAll();
+window.__dbg={stage,inner,resetStage,goto,flip,W,setMode:m=>{mode=m;$("mode").textContent="Mode : "+(m==="visite"?"Visite":"Retrouve");paintAll()},look:(y,p)=>{yaw=y;pitch=p}};
+}
+</script>
+</body>
+</html>
